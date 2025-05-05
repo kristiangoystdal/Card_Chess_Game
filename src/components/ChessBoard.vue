@@ -25,10 +25,6 @@
   </v-container>
 </template>
 
-
-
-
-
 <script>
 import { db } from "@/js/firebaseConfig";
 import { ref, update, get, child, onValue } from "firebase/database";
@@ -88,13 +84,9 @@ export default {
     gameId: {
       type: String,
       required: true,
-    },
-
+    }
   },
   computed: {
-    gameId() {
-      return this.gameData ? this.gameData.id : null;
-    },
     player1() {
       return this.gameData ? this.gameData.player1 : null;
     },
@@ -122,51 +114,15 @@ export default {
     },
   },
   mounted() {
-    this.initializeBoard();
     this.loadBoard();
 
     this.listenForGameUpdates();
   },
   methods: {
-    async initializeBoard() {
-      this.positions = Array.from({ length: 8 }, () => Array(8).fill({ color: "blank", type: "blank" }));
-      this.setupPieces("white", 0, 1);
-      this.setupBlankPieces("blank")
-      this.setupPieces("black", 7, 6);
-      await this.saveGame();
-
-    },
-    setupPieces(color, backRow, frontRow) {
-      const pieces = [
-        { type: "rook", col: 0 },
-        { type: "knight", col: 1 },
-        { type: "bishop", col: 2 },
-        { type: "queen", col: 3 },
-        { type: "king", col: 4 },
-        { type: "bishop", col: 5 },
-        { type: "knight", col: 6 },
-        { type: "rook", col: 7 }
-      ];
-      pieces.forEach((piece) => {
-        this.positions[backRow][piece.col] = { color, type: piece.type };
-        this.positions[frontRow][piece.col] = { color, type: "pawn" };
-      });
-    },
-    setupBlankPieces(color) {
-      for (let i = 2; i < 6; i++) {
-        for (let j = 0; j < 8; j++) {
-          this.positions[i][j] = { color, type: "blank" };
-        }
-      }
-    },
     async saveGame() {
-      const turnNumber = this.turnNumber + 1;
-      const nextPlayer = this.currentTurn === "player1" ? "player2" : "player1";
       const gameRef = ref(db, `games/${this.gameId}`);
       // Save the game state to Firebase
       await update(gameRef, {
-        currentTurn: nextPlayer,
-        turnNumber: this.turnNumber,
         board: this.positions,
       });
       console.log("Game saved successfully.");
@@ -387,19 +343,25 @@ export default {
       }
 
       if (piece.type === "pawn") {
-        const direction = piece.color === "white" ? -1 : 1;
-        const startRow = piece.color === "white" ? 6 : 1;
-        if (this.getPiece(row + direction, col).type === "blank") {
-          moves.push({ row: row + direction, col });
-          if (row === startRow && this.getPiece(row + 2 * direction, col).type === "blank") {
-            moves.push({ row: row + 2 * direction, col });
+        const direction = piece.color === "white" ? 1 : -1;
+        const startRow = piece.color === "white" ? 1 : 6;
+        const newRow = row + direction;
+
+        // Move forward
+        if (this.getPiece(newRow, col).type === "blank") {
+          moves.push({ row: newRow, col });
+          // Double move from starting position
+          if (row === startRow && this.getPiece(newRow + direction, col).type === "blank") {
+            moves.push({ row: newRow + direction, col });
           }
         }
-        if (col > 0 && this.getPiece(row + direction, col - 1).color !== piece.color) {
-          moves.push({ row: row + direction, col: col - 1 });
+
+        // Capture diagonally
+        if (col > 0 && this.getPiece(newRow, col - 1).color !== piece.color && this.getPiece(newRow, col - 1).type !== "blank") {
+          moves.push({ row: newRow, col: col - 1 });
         }
-        if (col < 7 && this.getPiece(row + direction, col + 1).color !== piece.color) {
-          moves.push({ row: row + direction, col: col + 1 });
+        if (col < 7 && this.getPiece(newRow, col + 1).color !== piece.color && this.getPiece(newRow, col + 1).type !== "blank") {
+          moves.push({ row: newRow, col: col + 1 });
         }
       }
 
