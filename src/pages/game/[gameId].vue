@@ -97,6 +97,16 @@ export default {
       onValue(gameRef, (snapshot) => {
         if (snapshot.exists()) {
           this.gameData = snapshot.val();
+
+          // Check if the game has a deck and if it's empty
+          // If the deck is empty, generate a new one
+          if (this.gameData.deck && this.gameData.deck.length < 1) {
+            this.gameData.deck = this.generateStartingDeck(); // Refill the deck if empty
+            const gameRef = dbRef(db, `games/${this.gameId}`);
+            update(gameRef, {
+              deck: this.gameData.deck,
+            });
+          }
         } else {
           console.error('Game does not exist.');
         }
