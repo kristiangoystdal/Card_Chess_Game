@@ -20,6 +20,7 @@
           </div>
         </div>
       </v-card-text>
+      {{ myCardHand }}
     </v-card>
   </v-container>
 </template>
@@ -104,6 +105,18 @@ export default {
       }
       return null;
     },
+    myPlayer() {
+      const userId = localStorage.getItem('userId');
+      if (this.player1 && userId === this.player1.userId) {
+        return this.player1;
+      } else if (this.player2 && userId === this.player2.userId) {
+        return this.player2;
+      }
+      return null;
+    },
+    myCardHand() {
+      return this.myPlayer ? this.myPlayer.hand : null;
+    },
     displayedRows() {
       const indexes = [...Array(8).keys()]; // [0,1,2,3,4,5,6,7]
       return this.myColor === 'white' ? indexes.reverse() : indexes;
@@ -118,12 +131,36 @@ export default {
     this.listenForGameUpdates();
   },
   methods: {
-    async saveGame() {
+    async saveGame(piece) {
       const nextTurn = this.currentTurn === "player1" ? "player2" : "player1";
       const gameRef = ref(db, `games/${this.gameId}`);
 
+      // Check which player is making the move and update their hand
+      const player1 = this.player1;
+      const player2 = this.player2;
+      const player = this.currentTurn === "player1" ? player1 : player2;
+      const playerHand = [...player.hand];
+      const cardIndex = playerHand.indexOf(piece.type);
+      if (cardIndex !== -1) {
+        playerHand.splice(cardIndex, 1);
+      } else {
+        // If the card is not found in the player's hand, it might be a wild card
+        const wildCardIndex = playerHand.indexOf("wild");
+        if (wildCardIndex !== -1) {
+          playerHand.splice(wildCardIndex, 1);
+        }
+      }
+
+      if (player.userId === player1.userId) {
+        player1.hand = playerHand;
+      } else {
+        player2.hand = playerHand;
+      }
+
       // Save the game state to Firebase
       await update(gameRef, {
+        player1: player1,
+        player2: player2,
         currentTurn: nextTurn,
         board: this.positions,
       });
@@ -144,7 +181,7 @@ export default {
       if (piece && piece.type !== "blank" || this.positions[toRow][toCol].color !== piece.color) {
         this.positions[toRow][toCol] = piece;
         this.positions[fromRow][fromCol] = { color: "blank", type: "blank" };
-        this.saveGame();
+        this.saveGame(piece);
       }
     },
     getPiece(row, col) {
@@ -163,6 +200,18 @@ export default {
       }
 
       const piece = this.getPiece(row, col);
+
+      // Check if the selected piece is one of the cards in your hand
+      // If its not, then block the move 
+
+      if (piece && piece.type !== "blank" && piece.color === this.getCurrentPlayer().color) {
+        if (this.myCardHand && !this.myCardHand.includes(piece.type) && !this.myCardHand.includes("wild")) {
+          this.selectedPiece = null;
+          this.avabilableMoves = [];
+          return; // Block the move
+        }
+      }
+
 
       if (piece && piece.type !== "blank" && piece.color === this.getCurrentPlayer().color) {
         this.selectedPiece = piece;

@@ -107,12 +107,31 @@ export default {
               deck: this.gameData.deck,
             });
           }
+
+          // Check the player hands and refill if necessary
+          const updates = {};
+
+          if (this.gameData.player1.hand.length < this.handSize) {
+            const newCards = this.gameData.deck.splice(-1 * (this.handSize - this.gameData.player1.hand.length));
+            this.gameData.player1.hand.push(...newCards);
+            updates[`player1/hand`] = this.gameData.player1.hand;
+          }
+
+          if (this.gameData.player2.hand.length < this.handSize) {
+            const newCards = this.gameData.deck.splice(-1 * (this.handSize - this.gameData.player2.hand.length));
+            this.gameData.player2.hand.push(...newCards);
+            updates[`player2/hand`] = this.gameData.player2.hand;
+          }
+
+          if (Object.keys(updates).length > 0) {
+            updates.deck = this.gameData.deck;
+            update(gameRef, updates);
+          }
         } else {
           console.error('Game does not exist.');
         }
       });
     },
-
     generateStartingBoard() {
       const board = Array.from({ length: 8 }, () => Array.from({ length: 8 }, () => ({ color: 'blank', type: 'blank' })));
 
