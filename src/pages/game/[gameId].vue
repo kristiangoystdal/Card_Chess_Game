@@ -91,7 +91,7 @@ export default {
     },
 
     generateStartingBoard() {
-      const board = Array.from({ length: 8 }, () => Array(8).fill({ color: 'blank', type: 'blank' }));
+      const board = Array.from({ length: 8 }, () => Array.from({ length: 8 }, () => ({ color: 'blank', type: 'blank' })));
 
       const pieces = [
         { type: "rook", col: 0 },
