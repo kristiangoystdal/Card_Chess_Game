@@ -30,8 +30,7 @@ export default {
     return {
       gameId: '',
       gameData: null,
-      currentBoard: null,
-      previousBoard: null,
+      handSize: 5
     };
   },
 
@@ -51,12 +50,14 @@ export default {
 
       if (gameData.board) {
         this.gameData = gameData;
-        this.currentBoard = gameData.board;
         return;
       }
 
       const player1Snapshot = await get(child(dbRootRef, `games/${this.gameId}/player1`));
       const player1 = player1Snapshot.val() || null;
+
+      const player2Snapshot = await get(child(dbRootRef, `games/${this.gameId}/player2`));
+      const player2 = player2Snapshot.val() || null;
 
       let startingTurn = "player1"; // default
       if (player1 && player1.color) {
@@ -65,11 +66,25 @@ export default {
 
       const initialBoard = this.generateStartingBoard(); // You can improve this later
 
+      const initialDeck = this.generateStartingDeck(); // You can improve this later
+
+      const player1Hand = [];
+      const player2Hand = [];
+      for (let i = 0; i < this.handSize; i++) {
+        player1Hand.push(initialDeck.pop());
+        player2Hand.push(initialDeck.pop());
+      }
+      player1.hand = player1Hand;
+      player2.hand = player2Hand;
+
       const gameRef = dbRef(db, `games/${this.gameId}`);
       await update(gameRef, {
+        deck: initialDeck,
         board: initialBoard,
         currentTurn: startingTurn,
         turnNumber: 0,
+        player1: player1,
+        player2: player2,
       });
 
       console.log('Game created successfully with white to start.');
@@ -82,14 +97,6 @@ export default {
       onValue(gameRef, (snapshot) => {
         if (snapshot.exists()) {
           this.gameData = snapshot.val();
-          this.currentBoard = snapshot.val().board;
-
-          this.currentTurn = this.gameData.currentTurn;
-
-          if (this.currentBoard !== this.previousBoard) {
-            this.previousBoard = this.currentBoard;
-          }
-
         } else {
           console.error('Game does not exist.');
         }
@@ -124,6 +131,33 @@ export default {
 
       return board;
     },
+    generateStartingDeck() {
+      const deck = [];
+
+      const cards = [
+        { type: "pawn", numberOfCards: 16 },
+        { type: "knight", numberOfCards: 10 },
+        { type: "bishop", numberOfCards: 10 },
+        { type: "rook", numberOfCards: 8 },
+        { type: "queen", numberOfCards: 6 },
+        { type: "king", numberOfCards: 6 },
+        { type: "wild", numberOfCards: 4 }
+      ];
+
+      cards.forEach((card) => {
+        for (let i = 0; i < card.numberOfCards; i++) {
+          deck.push(card.type);
+        }
+      });
+
+      // Shuffle the deck
+      for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+      }
+
+      return deck;
+    }
   },
 };
 </script>
