@@ -1,7 +1,6 @@
 <template>
   <v-container class="d-flex justify-center">
     <v-card class="pa-4" outlined>
-      <v-card-title class="justify-center">Chess Board</v-card-title>
       <v-card-text>
         <div class="chess-board" v-if="positions.length">
           <div v-for="(rowIndex, realRowIndex) in displayedRows" :key="realRowIndex" class="row">
@@ -120,12 +119,14 @@ export default {
   },
   methods: {
     async saveGame() {
+      const nextTurn = this.currentTurn === "player1" ? "player2" : "player1";
       const gameRef = ref(db, `games/${this.gameId}`);
+
       // Save the game state to Firebase
       await update(gameRef, {
+        currentTurn: nextTurn,
         board: this.positions,
       });
-      console.log("Game saved successfully.");
     },
     async loadBoard() {
       const dbRef = ref(db);
@@ -135,7 +136,6 @@ export default {
         this.positions = snapshot.val().board;
         this.turnNumber = snapshot.val().turnNumber;
       } else {
-        console.log("No saved game! Initializing...");
         this.initializeBoard();
       }
     },
@@ -159,7 +159,6 @@ export default {
     selectPiece(row, col) {
       // Check if it's your turn
       if ((this.currentTurn == "player1" && this.player1.userId !== localStorage.getItem("userId")) || (this.currentTurn == "player2" && this.player2.userId !== localStorage.getItem("userId"))) {
-        console.log("Not your turn!");
         return; // Block the move
       }
 
@@ -170,13 +169,10 @@ export default {
         this.selectedRow = row;
         this.selectedCol = col;
         this.showAvailableMoves(row, col);
-        console.log("Selected piece:", piece.type);
       } else {
         if (this.avabilableMoves.length && this.avabilableMoves.some(move => move.row === row && move.col === col)) {
           // Move the selected piece to the clicked cell
           this.movePiece(this.selectedRow, this.selectedCol, row, col);
-        } else {
-          console.log("Invalid move or no piece selected.");
         }
 
         this.selectedPiece = null;
@@ -369,6 +365,7 @@ export default {
     },
     listenForGameUpdates() {
       const gameRef = ref(db, `games/${this.gameId}`);
+
       onValue(gameRef, (snapshot) => {
         if (snapshot.exists()) {
           const data = snapshot.val();
