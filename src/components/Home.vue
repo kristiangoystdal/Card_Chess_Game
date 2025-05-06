@@ -75,8 +75,6 @@ export default {
         const userRef = dbRef(db, `queue/${this.userKey}`);
         onDisconnect(userRef).remove();
 
-        console.log(`User ${this.username} joined queue with key: ${newUserRef.key}`);
-
         // Listen for game creation
         this.listenForGame();
 
@@ -99,7 +97,6 @@ export default {
         const userRef = dbRef(db, `queue/${this.userKey}`);
         try {
           await remove(userRef);
-          console.log(`User ${this.username} manually removed from queue`);
         } catch (error) {
           console.error("Error manually removing user from queue:", error);
         }
@@ -126,7 +123,7 @@ export default {
           await set(gameRef, {
             player1: player1[1],
             player2: player2[1],
-            currentTurn: "player2",
+            currentTurn: "player1",
             createdAt: Date.now(),
           });
 
@@ -134,7 +131,7 @@ export default {
           await remove(dbRef(db, `queue/${player1[0]}`));
           await remove(dbRef(db, `queue/${player2[0]}`));
 
-          console.log(`Created game ${gameId} with ${player1[1].username} and ${player2[1].username}`);
+          // console.log(`Created game ${gameId} with ${player1[1].username} and ${player2[1].username}`);
 
           // If THIS user is one of the two matched players, redirect them to game
           if (player1[0] === this.userKey || player2[0] === this.userKey) {
@@ -150,16 +147,9 @@ export default {
         if (snapshot.exists()) {
           const games = snapshot.val();
           for (const gameId in games) {
-            console.log(`Checking game: ${gameId}`);
             const game = games[gameId];
 
-            console.log(`Game details:`, game);
-            console.log(`User ID:`, this.userId);
-            console.log(`Player 1 ID:`, game.player1?.userId);
-            console.log(`Player 2 ID:`, game.player2?.userId);
-
             if (game.player1?.userId === this.userId || game.player2?.userId === this.userId) {
-              console.log(`Found my game: ${gameId}`);
               this.router.push(`/game/${gameId}`);
               return;
             }
