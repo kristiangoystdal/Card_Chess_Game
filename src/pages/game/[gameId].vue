@@ -50,18 +50,13 @@ export default {
       const gameData = gameSnapshot.val();
 
       if (gameData.board) {
-        console.log('Game already exists:', gameData);
         this.gameData = gameData;
         this.currentBoard = gameData.board;
         return;
       }
 
-      console.log('Game does not exist, creating a new game...');
-
       const player1Snapshot = await get(child(dbRootRef, `games/${this.gameId}/player1`));
       const player1 = player1Snapshot.val() || null;
-
-      console.log('Player 1:', player1);
 
       let startingTurn = "player1"; // default
       if (player1 && player1.color) {
@@ -89,11 +84,12 @@ export default {
           this.gameData = snapshot.val();
           this.currentBoard = snapshot.val().board;
 
-          console.log(`Current Turn:`, this.gameData.currentTurn);
+          this.currentTurn = this.gameData.currentTurn;
 
           if (this.currentBoard !== this.previousBoard) {
             this.previousBoard = this.currentBoard;
           }
+
         } else {
           console.error('Game does not exist.');
         }
