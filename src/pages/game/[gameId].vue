@@ -47,6 +47,16 @@ export default {
     async checkOrCreateGame() {
       const dbRootRef = dbRef(db);
       const gameSnapshot = await get(child(dbRootRef, `games/${this.gameId}`));
+      const gameData = gameSnapshot.val();
+
+      if (gameData.board) {
+        console.log('Game already exists:', gameData);
+        this.gameData = gameData;
+        this.currentBoard = gameData.board;
+        return;
+      }
+
+      console.log('Game does not exist, creating a new game...');
 
       const player1Snapshot = await get(child(dbRootRef, `games/${this.gameId}/player1`));
       const player1 = player1Snapshot.val() || null;
