@@ -1,19 +1,52 @@
 <template>
-  <div>
-    <h1>Game: {{ gameId }}</h1>
-    <div v-if="gameData">
+  <v-row>
+    <v-col v-if="gameData" cols="2" class="border">
       <p><strong>Player 1:</strong> {{ gameData.player1.username }}</p>
       <p><strong>Player 2:</strong> {{ gameData.player2.username }}</p>
       <p><strong>Current Turn:</strong> {{ gameData.currentTurn }}</p>
-
+    </v-col>
+    <v-col>
       <!-- Chess Board -->
-      <ChessBoard :gameData="gameData" :gameId="gameId" />
-    </div>
+      <div class="chess-board-container">
+        <ChessBoard :gameData="gameData" :gameId="gameId" />
+      </div>
 
-    <div v-else>
-      <p>Loading game...</p>
-    </div>
-  </div>
+      <v-row>
+        <v-col v-for="(card, index) in myCardHand" :key="index">
+          <v-img :src="cardTypes.find(c => c.type === card).image" height="100" width="100"></v-img>
+        </v-col>
+      </v-row>
+    </v-col>
+    <v-col v-if="gameData" cols="2">
+      <br>
+      <v-row class="d-flex justify-center">
+        <v-btn>
+          Offer Draw
+        </v-btn>
+        <v-btn>
+          Resign
+        </v-btn>
+        <v-btn>
+          Surrender
+        </v-btn>
+      </v-row>
+
+      <v-row>
+        Chat messages will be displayed here.
+        <v-col cols="12">
+          <v-text-field label="Type your message" outlined></v-text-field>
+          <v-btn color="primary">Send</v-btn>
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col cols="12">
+          <p><strong>Player 1:</strong> Hello!</p>
+          <p><strong>Player 2:</strong> Hi there!</p>
+        </v-col>
+      </v-row>
+    </v-col>
+  </v-row>
+
 </template>
 
 <script>
@@ -21,6 +54,19 @@ import { db } from '../../js/firebaseConfig';
 import { ref as dbRef, set, get, onValue, child, update } from 'firebase/database';
 import ChessBoard from '../../components/ChessBoard.vue';
 import { useRoute } from 'vue-router';
+
+import card_pawn_black from '../../assets/images/cards/card_p_b.png';
+import card_pawn_white from '../../assets/images/cards/card_p_w.png';
+import card_knight_black from '../../assets/images/cards/card_kn_b.png';
+import card_knight_white from '../../assets/images/cards/card_kn_w.png';
+import card_bishop_black from '../../assets/images/cards/card_b_b.png';
+import card_bishop_white from '../../assets/images/cards/card_b_w.png';
+import card_rook_black from '../../assets/images/cards/card_r_b.png';
+import card_rook_white from '../../assets/images/cards/card_r_w.png';
+import card_queen_black from '../../assets/images/cards/card_q_b.png';
+import card_queen_white from '../../assets/images/cards/card_q_w.png';
+import card_king_black from '../../assets/images/cards/card_k_b.png';
+import card_king_white from '../../assets/images/cards/card_k_w.png';
 
 export default {
   name: 'GamePage',
@@ -30,10 +76,23 @@ export default {
     return {
       gameId: '',
       gameData: null,
-      handSize: 5
+      handSize: 5,
+      cardTypes: [
+        { type: 'pawn', color: 'black', image: card_pawn_black },
+        { type: 'pawn', color: 'white', image: card_pawn_white },
+        { type: 'knight', color: 'black', image: card_knight_black },
+        { type: 'knight', color: 'white', image: card_knight_white },
+        { type: 'bishop', color: 'black', image: card_bishop_black },
+        { type: 'bishop', color: 'white', image: card_bishop_white },
+        { type: 'rook', color: 'black', image: card_rook_black },
+        { type: 'rook', color: 'white', image: card_rook_white },
+        { type: 'queen', color: 'black', image: card_queen_black },
+        { type: 'queen', color: 'white', image: card_queen_white },
+        { type: 'king', color: 'black', image: card_king_black },
+        { type: 'king', color: 'white', image: card_king_white },
+      ],
     };
   },
-
   async created() {
     const route = useRoute();
     this.gameId = route.params.gameId;
@@ -41,7 +100,6 @@ export default {
     await this.checkOrCreateGame(); // ✅ NEW
     this.listenToGame();
   },
-
   methods: {
     async checkOrCreateGame() {
       const dbRootRef = dbRef(db);
@@ -188,5 +246,42 @@ export default {
       return deck;
     }
   },
+  computed: {
+    player1Hand() {
+      return this.gameData ? this.gameData.player1.hand : [];
+    },
+    player2Hand() {
+      return this.gameData ? this.gameData.player2.hand : [];
+    },
+    myPlayer() {
+      const userId = localStorage.getItem('userId');
+      if (userId === this.gameData.player1.userId) {
+        return this.gameData.player1;
+      } else if (userId === this.gameData.player2.userId) {
+        return this.gameData.player2;
+      }
+      return null;
+    },
+    myCardHand() {
+      return this.myPlayer ? this.myPlayer.hand : null;
+    },
+    myColor() {
+      return this.myPlayer ? this.myPlayer.color : null;
+    },
+
+  },
 };
 </script>
+
+<style scoped>
+.chess-board-container {
+  aspect-ratio: 1;
+  max-height: 70vh;
+  margin: auto;
+  padding: 20px 0;
+}
+
+.border {
+  border: 10px solid #ccc;
+}
+</style>
