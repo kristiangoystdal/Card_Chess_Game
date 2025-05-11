@@ -1,28 +1,22 @@
 <template>
-  <v-container class="d-flex justify-center">
-    <v-card class="pa-4" outlined>
-      <v-card-text>
-        <div class="chess-board" v-if="positions.length">
-          <div v-for="(rowIndex, realRowIndex) in displayedRows" :key="realRowIndex" class="row">
-            <div v-for="(col, colIndex) in cols" :key="colIndex"
-              :class="['cell', (rowIndex + colIndex) % 2 === 0 ? 'light-cell' : 'dark-cell']"
-              @click="selectPiece(rowIndex, colIndex)">
-              <template
-                v-if="positions[rowIndex] && positions[rowIndex][colIndex] && positions[rowIndex][colIndex].type !== 'blank'">
-                <v-img :src="pieceImages[positions[rowIndex][colIndex].color][positions[rowIndex][colIndex].type]"
-                  aspect-ratio="1" contain></v-img>
-              </template>
-              <template
-                v-else-if="avabilableMoves.length && avabilableMoves.some(move => move.row === rowIndex && move.col === colIndex)">
-                <v-icon color="black" large class="center">mdi-circle-outline</v-icon>
-              </template>
-            </div>
-          </div>
-        </div>
-      </v-card-text>
-      {{ myCardHand }}
-    </v-card>
-  </v-container>
+
+  <div class="chess-board" v-if="positions.length">
+    <div v-for="(rowIndex, realRowIndex) in displayedRows" :key="realRowIndex" class="row">
+      <div v-for="(col, colIndex) in cols" :key="colIndex"
+        :class="['cell', (rowIndex + colIndex) % 2 === 0 ? 'light-cell' : 'dark-cell']"
+        @click="selectPiece(rowIndex, colIndex)">
+        <template
+          v-if="positions[rowIndex] && positions[rowIndex][colIndex] && positions[rowIndex][colIndex].type !== 'blank'">
+          <v-img :src="pieceImages[positions[rowIndex][colIndex].color][positions[rowIndex][colIndex].type]"
+            aspect-ratio="1" contain></v-img>
+        </template>
+        <template
+          v-else-if="avabilableMoves.length && avabilableMoves.some(move => move.row === rowIndex && move.col === colIndex)">
+          <v-icon color="black" large class="center">mdi-circle-outline</v-icon>
+        </template>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -434,9 +428,9 @@ export default {
   display: grid;
   grid-template-rows: repeat(8, 1fr);
   grid-template-columns: repeat(8, 1fr);
-  width: 400px;
+  width: 100%;
   /* Fixed board size */
-  height: 400px;
+  height: 100%;
   border: 2px solid black;
   box-sizing: border-box;
 }
