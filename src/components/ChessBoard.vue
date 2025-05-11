@@ -1,5 +1,4 @@
 <template>
-
   <div class="chess-board" v-if="positions.length">
     <div v-for="(rowIndex, realRowIndex) in displayedRows" :key="realRowIndex" class="row">
       <div v-for="(col, colIndex) in cols" :key="colIndex"
@@ -428,12 +427,16 @@ export default {
   display: grid;
   grid-template-rows: repeat(8, 1fr);
   grid-template-columns: repeat(8, 1fr);
-  width: 100%;
-  /* Fixed board size */
+  aspect-ratio: 1 / 1;
+  /* ✅ Enforce square board */
   height: 100%;
+  /* ✅ Prevent growing too large */
+  margin: auto;
+  /* ✅ Center on page */
   border: 2px solid black;
   box-sizing: border-box;
 }
+
 
 .row {
   display: contents;
