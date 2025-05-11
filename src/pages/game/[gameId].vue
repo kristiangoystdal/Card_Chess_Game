@@ -1,24 +1,42 @@
 <template>
   <v-row>
-    <v-col v-if="gameData" cols="2" class="border">
-      <p><strong>Player 1:</strong> {{ gameData.player1.username }}</p>
-      <p><strong>Player 2:</strong> {{ gameData.player2.username }}</p>
-      <p><strong>Current Turn:</strong> {{ gameData.currentTurn }}</p>
-    </v-col>
-    <v-col>
-      <!-- Chess Board -->
-      <div class="chess-board-container">
-        <ChessBoard :gameData="gameData" :gameId="gameId" />
-      </div>
-
+    <v-col v-if="gameData" cols="3">
+      <br>
       <v-row>
-        <v-col v-for="(card, index) in myCardHand" :key="index">
-          <v-img :src="cardTypes.find(c => c.type === card).image" height="100" width="100"></v-img>
+        <v-col class="d-flex justify-center">
+          <h2>My Hand</h2>
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col>
+          <v-row v-for="(card, index) in myCardHand" :key="index">
+            <v-img :src="cardTypes.find(c => c.type === card).image" height="100" width="100"></v-img>
+          </v-row>
         </v-col>
       </v-row>
     </v-col>
-    <v-col v-if="gameData" cols="2">
+
+    <!-- Chess Board -->
+    <v-col class="game-board">
+      <v-row class="chess-board-container">
+        <ChessBoard :gameData="gameData" :gameId="gameId" />
+      </v-row>
+    </v-col>
+
+    <!-- Options and chat -->
+    <v-col v-if="gameData" cols="3">
+
       <br>
+      <v-row>
+        <v-col class="d-flex justify-center">
+          <h2>Options</h2>
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col class="d-flex justify-center">
+          <h4>Placeholders for now</h4>
+        </v-col>
+      </v-row>
       <v-row class="d-flex justify-center">
         <v-btn>
           Offer Draw
@@ -34,8 +52,8 @@
       <v-row>
         Chat messages will be displayed here.
         <v-col cols="12">
-          <v-text-field label="Type your message" outlined></v-text-field>
-          <v-btn color="primary">Send</v-btn>
+          <v-text-field label="Chat is currently disabled... Stay tuned" outlined></v-text-field>
+          <v-btn color="primary" :disabled="true">Send</v-btn>
         </v-col>
       </v-row>
       <v-row>
@@ -275,13 +293,24 @@ export default {
 
 <style scoped>
 .chess-board-container {
+  width: auto;
+  height: 100%;
+  /* max-width: 600px;
+  min-width: 300px; */
   aspect-ratio: 1;
-  max-height: 70vh;
   margin: auto;
   padding: 20px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
 
 .border {
   border: 10px solid #ccc;
+}
+
+.game-board {
+  height: 90vh;
 }
 </style>
