@@ -10,7 +10,8 @@
       <v-row>
         <v-col>
           <v-row v-for="(card, index) in myCardHand" :key="index">
-            <v-img :src="cardTypes.find(c => c.type === card).image" height="100" width="100"></v-img>
+            <v-img :src="cardTypes.find(c => c.type === card && c.color === (myColor || 'white')).image" height="100"
+              width="100"></v-img>
           </v-row>
         </v-col>
       </v-row>
@@ -24,8 +25,7 @@
     </v-col>
 
     <!-- Options and chat -->
-    <v-col v-if="gameData" cols="3">
-
+    <v-col v-if="gameData" cols="3" class="game-mangement">
       <br>
       <v-row>
         <v-col class="d-flex justify-center">
@@ -34,7 +34,7 @@
       </v-row>
       <v-row>
         <v-col class="d-flex justify-center">
-          <h4>Placeholders for now</h4>
+          <h4>(Placeholders for now)</h4>
         </v-col>
       </v-row>
       <v-row class="d-flex justify-center">
@@ -48,7 +48,7 @@
           Surrender
         </v-btn>
       </v-row>
-
+      <br><br>
       <v-row>
         Chat messages will be displayed here.
         <v-col cols="12">
@@ -85,6 +85,8 @@ import card_queen_black from '../../assets/images/cards/card_q_b.png';
 import card_queen_white from '../../assets/images/cards/card_q_w.png';
 import card_king_black from '../../assets/images/cards/card_k_b.png';
 import card_king_white from '../../assets/images/cards/card_k_w.png';
+import card_wild_black from '../../assets/images/cards/card_wild_b.png';
+import card_wild_white from '../../assets/images/cards/card_wild_w.png';
 
 export default {
   name: 'GamePage',
@@ -108,6 +110,8 @@ export default {
         { type: 'queen', color: 'white', image: card_queen_white },
         { type: 'king', color: 'black', image: card_king_black },
         { type: 'king', color: 'white', image: card_king_white },
+        { type: 'wild', color: 'black', image: card_wild_black },
+        { type: 'wild', color: 'white', image: card_wild_white },
       ],
     };
   },
@@ -312,5 +316,9 @@ export default {
 
 .game-board {
   height: 90vh;
+}
+
+.game-mangement {
+  margin-right: 20px;
 }
 </style>
