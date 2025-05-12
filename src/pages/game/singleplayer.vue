@@ -173,8 +173,6 @@ export default {
       player1.hand = player1Hand;
       player2.hand = player2Hand;
 
-      console.log('Game created successfully with white to start.');
-
       this.gameData = {
         player1: player1,
         player2: player2,
@@ -302,8 +300,6 @@ export default {
 
       this.gameData.player2.hand = hand;
       this.gameData.currentTurn = 'player1';
-
-      console.log(`AI moved ${moveChoice.piece} from ${moveChoice.from} to ${moveChoice.to}`);
     },
     getLegalMoves(piece, row, col, board) {
       const moves = [];
@@ -384,8 +380,6 @@ export default {
       this.gameData.player2 = value.player2;
 
       this.updatePlayerHand('player1');
-
-      console.log("Player 1's turn ended. Player 2's turn now.");
 
       this.makeAIMove();
     },

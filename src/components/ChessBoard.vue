@@ -185,8 +185,6 @@ export default {
         player2: player2,
         game: this.chessGame,
       });
-
-      console.log("Game saved successfully!");
     },
     selectPiece(row, col) {
       const localGame = this.gameData.game;
@@ -214,8 +212,6 @@ export default {
           // Move the piece
           move(this.chessGame.board.configuration, fromSquare, toSquare);
           this.chessGame.board.configuration = JSON.parse(JSON.stringify(this.chessGame.board.configuration));
-
-          console.log("Moved piece from", fromSquare, "to", toSquare);
 
           // Update the game
           this.saveGame(localGame);
