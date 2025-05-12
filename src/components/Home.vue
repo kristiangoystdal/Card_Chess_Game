@@ -1,35 +1,56 @@
 <template>
-  <v-container class="fill-height" fluid>
-    <v-row align="center" justify="center">
-      <v-col cols="12" md="6" class="text-center">
-        <v-card class="pa-8" elevation="10">
-          <v-card-title class="text-h4 font-weight-bold justify-center mb-6">
-            Move Card Chess
-          </v-card-title>
+  <v-container class="max-height" fluid>
+    <v-row justify="center">
+      <v-col md="6" class="text-center">
+        <v-row justify="center">
+          <h2 class="text-h4 font-weight-bold">
+            Singleplayer
+          </h2>
+        </v-row>
+        <v-row justify="center" class="singleplayer-section">
+          <v-btn color="primary" large rounded @click="router.push('/game/singleplayer')">
+            Play Against Random AI
+          </v-btn>
+          <v-btn color="warning" large rounded>
+            Play Against Easy AI
+            <v-tooltip activator="parent" location="end">Coming soon...</v-tooltip>
+          </v-btn>
+          <v-btn color="success" large rounded>
+            Play Against Medium AI
+            <v-tooltip activator="parent" location="end">Coming soon...</v-tooltip>
+          </v-btn>
+          <v-btn color="error" large rounded>
+            Play Against Hard AI
+            <v-tooltip activator="parent" location="end">Coming soon...</v-tooltip>
+          </v-btn>
+        </v-row>
+      </v-col>
 
-          <div class="mb-4">
-            <span v-if="joinedQueue" class="text-h6 font-weight-bold">You have joined the queue!</span>
-            <span v-else class="text-h6 font-weight-bold">Join the queue to play!</span>
+      <v-col md="6" class="text-center">
+        <v-row justify="center">
+          <h2 class="text-h4 font-weight-bold">
+            Multiplayer
+          </h2>
+        </v-row>
+        <v-row justify="center" class="multiplayer-section">
+          <div class="mb-4" justify="center">
+            <span v-if="joinedQueue" class="text-h6 font-weight-bold">You have joined the queue! Waiting for another
+              player</span>
+            <span v-else class="text-h6 font-weight-bold">Join the queue to play with other players!</span>
           </div>
 
           <v-text-field v-if="!joinedQueue" v-model="username" label="Enter your username" outlined class="mb-6" />
 
-          <v-card-actions class="justify-center">
-            <v-btn :loading="joinedQueue" color="primary" large rounded @click="joinQueue">
-              Join Queue
-            </v-btn>
-          </v-card-actions>
-        </v-card>
+          <v-btn v-if="joinedQueue" color="error" large rounded @click="leaveQueue">
+            Leave Queue
+          </v-btn>
+          <v-btn v-else color="primary" large rounded @click="joinQueue">
+            Join Queue
+          </v-btn>
+        </v-row>
       </v-col>
     </v-row>
-    <v-row>
-      Singleplayer mode
-      <v-btn color="secondary" large rounded @click="router.push('/game/singleplayer')">
-        Play Singleplayer Against AI
-      </v-btn>
-    </v-row>
   </v-container>
-  
 </template>
 
 <script>
@@ -56,6 +77,7 @@ export default {
 
   methods: {
     async joinQueue() {
+      this.joinedQueue = true;
       if (!this.username.trim()) {
         console.error('Username is required');
         alert('Please enter a username.');
@@ -92,24 +114,23 @@ export default {
       } catch (error) {
         console.error("Error joining queue:", error);
         alert("Failed to join the queue. Please try again.");
+        this.joinedQueue = false;
       }
     },
-
     generateRandomId() {
       return 'user_' + Math.random().toString(36).substr(2, 9);
     },
-
     async leaveQueue() {
       if (this.userKey) {
         const userRef = dbRef(db, `queue/${this.userKey}`);
         try {
           await remove(userRef);
+          this.joinedQueue = false;
         } catch (error) {
           console.error("Error manually removing user from queue:", error);
         }
       }
     },
-
     async tryMatchPlayers() {
       const queueRef = dbRef(db, 'queue/');
       const snapshot = await get(queueRef);
@@ -171,3 +192,42 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.singleplayer-section {
+  margin: 20px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.singleplayer-section .v-btn {
+  margin: 5px 0;
+  width: 40%;
+}
+
+.multiplayer-section {
+  margin: 20px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.multiplayer-section .v-btn {
+  margin: 5px 0;
+  width: 40%;
+}
+
+.multiplayer-section .v-text-field {
+  width: 50%;
+}
+
+.max-height {
+  height: 90vh !important;
+  margin: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+</style>
