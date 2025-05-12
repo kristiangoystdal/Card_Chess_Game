@@ -20,7 +20,7 @@
     <!-- Chess Board -->
     <v-col class="game-board">
       <v-row class="chess-board-container">
-        <ChessBoard :gameData="gameData" :gameId="gameId" />
+        <ChessBoard v-if="gameData" :gameData="gameData" :gameId="gameId" />
       </v-row>
     </v-col>
 
@@ -130,8 +130,10 @@ export default {
 
       if (gameData.board) {
         this.gameData = gameData;
+        console.log('Game already exists, loading existing game...');
         return;
       }
+      console.log('Game does not exist, creating a new one...');
 
       const player1Snapshot = await get(child(dbRootRef, `games/${this.gameId}/player1`));
       const player1 = player1Snapshot.val() || null;
@@ -165,7 +167,20 @@ export default {
         turnNumber: 0,
         player1: player1,
         player2: player2,
+        mode: 'multiplayer',
       });
+
+      this.gameData = {
+        player1: player1,
+        player2: player2,
+        currentTurn: startingTurn,
+        board: initialBoard,
+        deck: initialDeck,
+        turnNumber: 0,
+        mode: 'multiplayer',
+      };
+
+      this.gameId = this.gameId;
 
       console.log('Game created successfully with white to start.');
 
