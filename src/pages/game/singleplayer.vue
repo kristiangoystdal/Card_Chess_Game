@@ -185,7 +185,7 @@ export default {
       };
       this.gameId = "gameId"
 
-      if (player1.color ==="black"){
+      if (player1.color === "black") {
         this.makeAIMove();
       }
     },
@@ -259,8 +259,6 @@ export default {
       const hand = aiPlayer.hand;
       const game = this.gameData.game;
 
-      console.log("Turn: ", game.board.configuration.turn);
-
       const allMoves = game.moves();
       const legalMoves = [];
 
@@ -283,6 +281,7 @@ export default {
         return;
       }
 
+      // Choose randomly
       const moveChoice = legalMoves[Math.floor(Math.random() * legalMoves.length)];
 
       // Make the move
