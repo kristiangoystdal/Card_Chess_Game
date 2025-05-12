@@ -4,19 +4,34 @@
       <div v-for="colIndex in 8" :key="colIndex"
         :class="['cell', ((getBoardRow(rowIndex) + getBoardCol(colIndex)) % 2 === 0) ? 'light-cell' : 'dark-cell']"
         @click="selectPiece(getBoardRow(rowIndex), getBoardCol(colIndex))">
+
+        <!-- Green outline under piece if it's a valid capture -->
+        <div v-if="
+          availableMoveSquares.includes(getSquare(getBoardRow(rowIndex), getBoardCol(colIndex))) &&
+          getPieceAt(getBoardRow(rowIndex), getBoardCol(colIndex)) !== null
+        " class="center piece-overlay full-square">
+          <v-icon color="#333333" class="full-icon" x-large>mdi-circle-outline</v-icon>
+        </div>
+
+        <!-- Piece image (always on top) -->
         <template v-if="getPieceAt(getBoardRow(rowIndex), getBoardCol(colIndex))">
-          <v-img :src="pieceImages[getPieceAt(getBoardRow(rowIndex), getBoardCol(colIndex))]" alt="chess piece" />
+          <v-img :src="pieceImages[getPieceAt(getBoardRow(rowIndex), getBoardCol(colIndex))]" alt="chess piece"
+            class="piece-img" />
         </template>
-        <template
-          v-else-if="avabilableMoves && avabilableMoves.includes(getSquare(getBoardRow(rowIndex), getBoardCol(colIndex)))">
-          <div class="center">
-            <v-icon color="black" large>mdi-circle</v-icon>
-          </div>
-        </template>
+
+
+        <!-- Black dot for empty valid destination -->
+        <div v-if="
+          availableMoveSquares.includes(getSquare(getBoardRow(rowIndex), getBoardCol(colIndex))) &&
+          getPieceAt(getBoardRow(rowIndex), getBoardCol(colIndex)) === null
+        " class="center">
+          <v-icon color="#333333" large>mdi-circle</v-icon>
+        </div>
       </div>
     </div>
   </div>
 </template>
+
 
 
 <script>
@@ -60,12 +75,10 @@ export default {
     return {
       rows: 8,
       cols: 8,
-      avabilableMoves: null,
+      availableMoves: null,
       selectedPiece: null,
       selectedRow: null,
       selectedCol: null,
-      turn: "black",
-      turnNumber: 0,
     };
   },
   props: {
@@ -124,6 +137,10 @@ export default {
     boardConfiguration() {
       return this.gameData ? this.gameData.game.board.configuration : null;
     },
+    availableMoveSquares() {
+      if (!this.availableMoves || typeof this.availableMoves !== 'object') return [];
+      return Object.values(this.availableMoves);
+    }
   },
   methods: {
     async saveGame() {
@@ -133,7 +150,7 @@ export default {
       // Check which player is making the move and update their hand
       const player1 = this.player1;
       const player2 = this.player2;
-      const player = this.currentTurn === "player1" ? player1 : player2;
+      const player = this.currentTurn === "white" ? player1 : player2;
       const playerHand = [...player.hand];
       const cardIndex = playerHand.indexOf(this.selectedPiece.toLowerCase());
       if (cardIndex !== -1) {
@@ -183,30 +200,42 @@ export default {
       const piece = this.getPieceAt(row, col);
 
       // Check if the selected piece is not in your hand
-      if (piece && this.myCardHand && !this.myCardHand.includes(piece.toLowerCase())) {
+      if (piece && this.myCardHand && !this.myCardHand.includes(piece.toLowerCase()) && !this.myCardHand.includes("w")) {
         console.warn("Selected piece is not in your hand:", piece);
         return;
       }
 
       // Move the selected piece to the clicked cell
-      if (this.selectedPiece && this.avabilableMoves.length > 0) {
+      if (this.selectedPiece && this.availableMoves.length > 0) {
         const fromSquare = this.getSquare(this.selectedRow, this.selectedCol);
         const toSquare = this.getSquare(row, col);
 
-        if (this.avabilableMoves.includes(toSquare)) {
+        if (this.availableMoves.includes(toSquare)) {
           // Move the piece
           move(this.chessGame.board.configuration, fromSquare, toSquare);
+          this.chessGame.board.configuration = JSON.parse(JSON.stringify(this.chessGame.board.configuration));
+
+          console.log("Moved piece from", fromSquare, "to", toSquare);
 
           // Update the game
           this.saveGame(localGame);
-        } else {
-          console.warn("Invalid move:", toSquare);
-        }
+
+          this.selectedPiece = null;
+          this.selectedRow = null;
+          this.selectedCol = null;
+          this.availableMoves = {};
+          return;
+        } 
+
         // Reset selected piece
         this.selectedPiece = null;
         this.selectedRow = null;
         this.selectedCol = null;
+        this.availableMoves = {};
+      }
 
+      if (!piece) {
+        return;
       }
 
       // Check if the selected piece is one of your pieces
@@ -216,19 +245,13 @@ export default {
         this.selectedCol = col;
 
         // Get the available moves for current player
-        this.avabilableMoves = moves(this.chessGame.board.configuration);
-
-        // Filter the available moves based on the selected piece
-        const filteredMoves = this.avabilableMoves[this.getSquare(row, col)] || {};
-
-        this.avabilableMoves = filteredMoves;
+        this.availableMoves = this.chessGame.moves(this.getSquare(row, col));
       }
       else {
-        console.warn("Selected piece is not yours:", piece);
         this.selectedPiece = null;
         this.selectedRow = null;
         this.selectedCol = null;
-        this.avabilableMoves = [];
+        this.availableMoves = [];
       }
     },
     getPieceAt(row, col) {
@@ -244,7 +267,6 @@ export default {
     },
     checkLowerCase(piece) {
       if (typeof piece !== 'string') {
-        console.warn('Invalid piece:', piece);
         return false;
       }
       return piece === piece.toLowerCase() ? false : true;
@@ -265,11 +287,8 @@ export default {
   grid-template-rows: repeat(8, 1fr);
   grid-template-columns: repeat(8, 1fr);
   aspect-ratio: 1 / 1;
-  /* ✅ Enforce square board */
   height: 100%;
-  /* ✅ Prevent growing too large */
   margin: auto;
-  /* ✅ Center on page */
   border: 2px solid black;
   box-sizing: border-box;
 }
@@ -325,5 +344,31 @@ export default {
   align-items: center;
   height: 100%;
   width: 100%;
+}
+
+.piece-img {
+  position: relative;
+  z-index: 2;
+}
+
+.piece-overlay {
+  position: absolute;
+  z-index: 1;
+}
+
+.piece-overlay.full-square {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.full-icon {
+  font-size: 450%;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>
