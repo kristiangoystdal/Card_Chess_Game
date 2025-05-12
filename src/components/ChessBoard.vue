@@ -157,7 +157,7 @@ export default {
         playerHand.splice(cardIndex, 1);
       } else {
         // If the card is not found in the player's hand, it might be a wild card
-        const wildCardIndex = playerHand.indexOf("wild");
+        const wildCardIndex = playerHand.indexOf("w");
         if (wildCardIndex !== -1) {
           playerHand.splice(wildCardIndex, 1);
         }
