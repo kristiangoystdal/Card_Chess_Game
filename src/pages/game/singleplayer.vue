@@ -6,22 +6,12 @@
         <v-col class="d-flex justify-center">
           <h2>My Hand</h2>
         </v-col>
-        <v-col class="d-flex justify-center">
-          <h2>Opponent's Hand</h2>
-        </v-col>
       </v-row>
       <v-row>
         <v-col>
           <v-row v-for="(card, index) in myCardHand" :key="index">
             <v-img :src="cardTypes.find(c => c.type === card && c.color === (myColor || 'white')).image" height="100"
               width="100"></v-img>
-          </v-row>
-        </v-col>
-        <v-col>
-          <v-row v-for="(card, index) in player2Hand" :key="index">
-            <v-img
-              :src="cardTypes.find(c => c.type === card && c.color === (myColor === 'white' ? 'black' : 'white')).image"
-              height="100" width="100"></v-img>
           </v-row>
         </v-col>
       </v-row>
