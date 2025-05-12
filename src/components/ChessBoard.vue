@@ -1,26 +1,28 @@
 <template>
-  <div class="chess-board" v-if="positions.length">
-    <div v-for="(rowIndex, realRowIndex) in displayedRows" :key="realRowIndex" class="row">
-      <div v-for="(col, colIndex) in cols" :key="colIndex"
-        :class="['cell', (rowIndex + colIndex) % 2 === 0 ? 'light-cell' : 'dark-cell']"
-        @click="selectPiece(rowIndex, colIndex)">
-        <template
-          v-if="positions[rowIndex] && positions[rowIndex][colIndex] && positions[rowIndex][colIndex].type !== 'blank'">
-          <v-img :src="pieceImages[positions[rowIndex][colIndex].color][positions[rowIndex][colIndex].type]"
-            aspect-ratio="1" contain></v-img>
+  <div class="chess-board">
+    <div v-for="rowIndex in 8" :key="rowIndex" class="row">
+      <div v-for="colIndex in 8" :key="colIndex"
+        :class="['cell', ((getBoardRow(rowIndex) + getBoardCol(colIndex)) % 2 === 0) ? 'light-cell' : 'dark-cell']"
+        @click="selectPiece(getBoardRow(rowIndex), getBoardCol(colIndex))">
+        <template v-if="getPieceAt(getBoardRow(rowIndex), getBoardCol(colIndex))">
+          <v-img :src="pieceImages[getPieceAt(getBoardRow(rowIndex), getBoardCol(colIndex))]" alt="chess piece" />
         </template>
         <template
-          v-else-if="avabilableMoves.length && avabilableMoves.some(move => move.row === rowIndex && move.col === colIndex)">
-          <v-icon color="black" large class="center">mdi-circle-outline</v-icon>
+          v-else-if="avabilableMoves && avabilableMoves.includes(getSquare(getBoardRow(rowIndex), getBoardCol(colIndex)))">
+          <div class="center">
+            <v-icon color="black" large>mdi-circle</v-icon>
+          </div>
         </template>
       </div>
     </div>
   </div>
 </template>
 
+
 <script>
 import { db } from "@/js/firebaseConfig";
-import { ref, update, get, child, onValue } from "firebase/database";
+import { ref, update } from "firebase/database";
+import { moves, move } from "js-chess-engine";
 
 import whitePawn from "@/assets/images/chess_pieces/pawn-w.svg";
 import whiteRook from "@/assets/images/chess_pieces/rook-w.svg";
@@ -37,22 +39,18 @@ import blackQueen from "@/assets/images/chess_pieces/queen-b.svg";
 import blackKing from "@/assets/images/chess_pieces/king-b.svg";
 
 const pieceImages = {
-  white: {
-    pawn: whitePawn,
-    rook: whiteRook,
-    knight: whiteKnight,
-    bishop: whiteBishop,
-    queen: whiteQueen,
-    king: whiteKing,
-  },
-  black: {
-    pawn: blackPawn,
-    rook: blackRook,
-    knight: blackKnight,
-    bishop: blackBishop,
-    queen: blackQueen,
-    king: blackKing,
-  },
+  p: blackPawn,
+  r: blackRook,
+  n: blackKnight,
+  b: blackBishop,
+  q: blackQueen,
+  k: blackKing,
+  P: whitePawn,
+  R: whiteRook,
+  N: whiteKnight,
+  B: whiteBishop,
+  Q: whiteQueen,
+  K: whiteKing
 };
 
 
@@ -62,9 +60,10 @@ export default {
     return {
       rows: 8,
       cols: 8,
-      positions: [],
-      avabilableMoves: [],
+      avabilableMoves: null,
       selectedPiece: null,
+      selectedRow: null,
+      selectedCol: null,
       turn: "black",
       turnNumber: 0,
     };
@@ -87,7 +86,7 @@ export default {
       return this.gameData ? this.gameData.player2 : null;
     },
     currentTurn() {
-      return this.gameData ? this.gameData.currentTurn : null;
+      return this.gameData ? this.gameData.game.board.configuration.turn : null;
     },
     myColor() {
       const userId = localStorage.getItem('userId');
@@ -110,30 +109,33 @@ export default {
     myCardHand() {
       return this.myPlayer ? this.myPlayer.hand : null;
     },
-    displayedRows() {
-      const indexes = [...Array(8).keys()]; // [0,1,2,3,4,5,6,7]
-      return this.myColor === 'white' ? indexes.reverse() : indexes;
-    },
     pieceImages() {
       return pieceImages;
     },
-  },
-  mounted() {
-    this.loadBoard();
-
-    this.listenForGameUpdates();
+    pieces() {
+      return this.gameData ? this.gameData.game.board.configuration.pieces : [];
+    },
+    gamemode() {
+      return this.gameData ? this.gameData.mode : null;
+    },
+    chessGame() {
+      return this.gameData ? this.gameData.game : null;
+    },
+    boardConfiguration() {
+      return this.gameData ? this.gameData.game.board.configuration : null;
+    },
   },
   methods: {
-    async saveGame(piece) {
-      const nextTurn = this.currentTurn === "player1" ? "player2" : "player1";
-      const gameRef = ref(db, `games/${this.gameId}`);
+    async saveGame() {
+      const nextTurn = this.currentTurn === "white" ? "black" : "white";
+      this.chessGame.board.configuration.turn = nextTurn;
 
       // Check which player is making the move and update their hand
       const player1 = this.player1;
       const player2 = this.player2;
       const player = this.currentTurn === "player1" ? player1 : player2;
       const playerHand = [...player.hand];
-      const cardIndex = playerHand.indexOf(piece.type);
+      const cardIndex = playerHand.indexOf(this.selectedPiece.toLowerCase());
       if (cardIndex !== -1) {
         playerHand.splice(cardIndex, 1);
       } else {
@@ -150,273 +152,108 @@ export default {
         player2.hand = playerHand;
       }
 
+      if (this.gamemode === "singleplayer") {
+        this.$emit("gameUpdated", {
+          player1: player1,
+          player2: player2,
+          game: this.chessGame,
+        });
+        return;
+      }
+
+      const gameRef = ref(db, `games/${this.gameId}`);
       // Save the game state to Firebase
       await update(gameRef, {
         player1: player1,
         player2: player2,
-        currentTurn: nextTurn,
-        board: this.positions,
+        game: this.chessGame,
       });
-    },
-    async loadBoard() {
-      const dbRef = ref(db);
-      const snapshot = await get(child(dbRef, `games/${this.gameId}`));
 
-      if (snapshot.exists()) {
-        this.positions = snapshot.val().board;
-        this.turnNumber = snapshot.val().turnNumber;
-      } else {
-        this.initializeBoard();
-      }
-    },
-    movePiece(fromRow, fromCol, toRow, toCol) {
-      const piece = this.positions[fromRow][fromCol];
-      if (piece && piece.type !== "blank" || this.positions[toRow][toCol].color !== piece.color) {
-        this.positions[toRow][toCol] = piece;
-        this.positions[fromRow][fromCol] = { color: "blank", type: "blank" };
-        this.saveGame(piece);
-      }
-    },
-    getPiece(row, col) {
-      return this.positions[row][col];
-    },
-    getPieceType(row, col) {
-      return this.positions[row][col].type;
-    },
-    getCurrentPlayer() {
-      return this.currentTurn === "player1" ? this.player1 : this.player2;
+      console.log("Game saved successfully!");
     },
     selectPiece(row, col) {
+      const localGame = this.gameData.game;
+
       // Check if it's your turn
-      if ((this.currentTurn == "player1" && this.player1.userId !== localStorage.getItem("userId")) || (this.currentTurn == "player2" && this.player2.userId !== localStorage.getItem("userId"))) {
+      if (this.currentTurn !== this.myColor) {
+        console.warn("It's not your turn!");
         return; // Block the move
       }
 
-      const piece = this.getPiece(row, col);
+      const piece = this.getPieceAt(row, col);
 
-      // Check if the selected piece is one of the cards in your hand
-      // If its not, then block the move 
-
-      if (piece && piece.type !== "blank" && piece.color === this.getCurrentPlayer().color) {
-        if (this.myCardHand && !this.myCardHand.includes(piece.type) && !this.myCardHand.includes("wild")) {
-          this.selectedPiece = null;
-          this.avabilableMoves = [];
-          return; // Block the move
-        }
+      // Check if the selected piece is not in your hand
+      if (piece && this.myCardHand && !this.myCardHand.includes(piece.toLowerCase())) {
+        console.warn("Selected piece is not in your hand:", piece);
+        return;
       }
 
+      // Move the selected piece to the clicked cell
+      if (this.selectedPiece && this.avabilableMoves.length > 0) {
+        const fromSquare = this.getSquare(this.selectedRow, this.selectedCol);
+        const toSquare = this.getSquare(row, col);
 
-      if (piece && piece.type !== "blank" && piece.color === this.getCurrentPlayer().color) {
+        if (this.avabilableMoves.includes(toSquare)) {
+          // Move the piece
+          move(this.chessGame.board.configuration, fromSquare, toSquare);
+
+          // Update the game
+          this.saveGame(localGame);
+        } else {
+          console.warn("Invalid move:", toSquare);
+        }
+        // Reset selected piece
+        this.selectedPiece = null;
+        this.selectedRow = null;
+        this.selectedCol = null;
+
+      }
+
+      // Check if the selected piece is one of your pieces
+      if ((this.myColor === "white" && this.checkLowerCase(piece)) || (this.myColor === "black" && !this.checkLowerCase(piece))) {
         this.selectedPiece = piece;
         this.selectedRow = row;
         this.selectedCol = col;
-        this.showAvailableMoves(row, col);
-      } else {
-        if (this.avabilableMoves.length && this.avabilableMoves.some(move => move.row === row && move.col === col)) {
-          // Move the selected piece to the clicked cell
-          this.movePiece(this.selectedRow, this.selectedCol, row, col);
-        }
 
+        // Get the available moves for current player
+        this.avabilableMoves = moves(this.chessGame.board.configuration);
+
+        // Filter the available moves based on the selected piece
+        const filteredMoves = this.avabilableMoves[this.getSquare(row, col)] || {};
+
+        this.avabilableMoves = filteredMoves;
+      }
+      else {
+        console.warn("Selected piece is not yours:", piece);
         this.selectedPiece = null;
+        this.selectedRow = null;
+        this.selectedCol = null;
         this.avabilableMoves = [];
       }
     },
-    showAvailableMoves(row, col) {
-      const piece = this.getPiece(row, col);
-      if (piece && piece.type !== "blank") {
-        this.avabilableMoves = this.calculateAvailableMoves(piece, row, col);
-      } else {
-        this.avabilableMoves = [];
-      }
+    getPieceAt(row, col) {
+      const square = this.getSquare(row, col);
+      const piece = this.pieces[square];
+      return piece || null;
     },
-    calculateAvailableMoves(piece, row, col) {
-      const moves = [];
-
-      if (piece.type === "king") {
-        if (row > 0 && (this.getPiece(row - 1, col).type === "blank" || this.getPiece(row - 1, col).color !== piece.color)) {
-          moves.push({ row: row - 1, col: col });
-        }
-        if (row < 7 && (this.getPiece(row + 1, col).type === "blank" || this.getPiece(row + 1, col).color !== piece.color)) {
-          moves.push({ row: row + 1, col: col });
-        }
-        if (col > 0 && (this.getPiece(row, col - 1).type === "blank" || this.getPiece(row, col - 1).color !== piece.color)) {
-          moves.push({ row: row, col: col - 1 });
-        }
-        if (col < 7 && (this.getPiece(row, col + 1).type === "blank" || this.getPiece(row, col + 1).color !== piece.color)) {
-          moves.push({ row: row, col: col + 1 });
-        }
-        if (row > 0 && col > 0 && (this.getPiece(row - 1, col - 1).type === "blank" || this.getPiece(row - 1, col - 1).color !== piece.color)) {
-          moves.push({ row: row - 1, col: col - 1 });
-        }
-        if (row > 0 && col < 7 && (this.getPiece(row - 1, col + 1).type === "blank" || this.getPiece(row - 1, col + 1).color !== piece.color)) {
-          moves.push({ row: row - 1, col: col + 1 });
-        }
-        if (row < 7 && col > 0 && (this.getPiece(row + 1, col - 1).type === "blank" || this.getPiece(row + 1, col - 1).color !== piece.color)) {
-          moves.push({ row: row + 1, col: col - 1 });
-        }
-        if (row < 7 && col < 7 && (this.getPiece(row + 1, col + 1).type === "blank" || this.getPiece(row + 1, col + 1).color !== piece.color)) {
-          moves.push({ row: row + 1, col: col + 1 });
-        }
-      }
-
-      if (piece.type === "rook") {
-        for (let i = row - 1; i >= 0; i--) {
-          if (this.getPiece(i, col).type === "blank") {
-            moves.push({ row: i, col });
-          } else if (this.getPiece(i, col).color !== piece.color) {
-            moves.push({ row: i, col });
-            break;
-          } else {
-            break;
-          }
-        }
-        for (let i = row + 1; i <= 7; i++) {
-          if (this.getPiece(i, col).type === "blank") {
-            moves.push({ row: i, col });
-          } else if (this.getPiece(i, col).color !== piece.color) {
-            moves.push({ row: i, col });
-            break;
-          } else {
-            break;
-          }
-        }
-        for (let i = col - 1; i >= 0; i--) {
-          if (this.getPiece(row, i).type === "blank") {
-            moves.push({ row, col: i });
-          } else if (this.getPiece(row, i).color !== piece.color) {
-            moves.push({ row, col: i });
-            break;
-          } else {
-            break;
-          }
-        }
-        for (let i = col + 1; i <= 7; i++) {
-          if (this.getPiece(row, i).type === "blank") {
-            moves.push({ row, col: i });
-          } else if (this.getPiece(row, i).color !== piece.color) {
-            moves.push({ row, col: i });
-            break;
-          } else {
-            break;
-          }
-        }
-      }
-
-      if (piece.type === "bishop") {
-        for (let i = 1; i <= 7; i++) {
-          if (row - i >= 0 && col - i >= 0) {
-            if (this.getPiece(row - i, col - i).type === "blank") {
-              moves.push({ row: row - i, col: col - i });
-            } else if (this.getPiece(row - i, col - i).color !== piece.color) {
-              moves.push({ row: row - i, col: col - i });
-              break;
-            } else {
-              break;
-            }
-          }
-        }
-        for (let i = 1; i <= 7; i++) {
-          if (row - i >= 0 && col + i <= 7) {
-            if (this.getPiece(row - i, col + i).type === "blank") {
-              moves.push({ row: row - i, col: col + i });
-            } else if (this.getPiece(row - i, col + i).color !== piece.color) {
-              moves.push({ row: row - i, col: col + i });
-              break;
-            } else {
-              break;
-            }
-          }
-        }
-        for (let i = 1; i <= 7; i++) {
-          if (row + i <= 7 && col - i >= 0) {
-            if (this.getPiece(row + i, col - i).type === "blank") {
-              moves.push({ row: row + i, col: col - i });
-            } else if (this.getPiece(row + i, col - i).color !== piece.color) {
-              moves.push({ row: row + i, col: col - i });
-              break;
-            } else {
-              break;
-            }
-          }
-        }
-        for (let i = 1; i <= 7; i++) {
-          if (row + i <= 7 && col + i <= 7) {
-            if (this.getPiece(row + i, col + i).type === "blank") {
-              moves.push({ row: row + i, col: col + i });
-            } else if (this.getPiece(row + i, col + i).color !== piece.color) {
-              moves.push({ row: row + i, col: col + i });
-              break;
-            } else
-              break;
-          }
-        }
-      }
-
-      if (piece.type === "queen") {
-        // Combine rook and bishop moves
-        moves.push(...this.calculateAvailableMoves({ type: "rook", color: piece.color }, row, col));
-        moves.push(...this.calculateAvailableMoves({ type: "bishop", color: piece.color }, row, col));
-      }
-
-      if (piece.type === "knight") {
-        const knightMoves = [
-          { row: -2, col: -1 },
-          { row: -2, col: 1 },
-          { row: -1, col: -2 },
-          { row: -1, col: 2 },
-          { row: 1, col: -2 },
-          { row: 1, col: 2 },
-          { row: 2, col: -1 },
-          { row: 2, col: 1 },
-        ];
-        knightMoves.forEach((move) => {
-          const newRow = row + move.row;
-          const newCol = col + move.col;
-          if (newRow >= 0 && newRow <= 7 && newCol >= 0 && newCol <= 7) {
-            if (this.getPiece(newRow, newCol).type === "blank" || this.getPiece(newRow, newCol).color !== piece.color) {
-              moves.push({ row: newRow, col: newCol });
-            }
-          }
-        });
-      }
-
-      if (piece.type === "pawn") {
-        const direction = piece.color === "white" ? 1 : -1;
-        const startRow = piece.color === "white" ? 1 : 6;
-        const newRow = row + direction;
-
-        // Move forward
-        if (this.getPiece(newRow, col).type === "blank") {
-          moves.push({ row: newRow, col });
-          // Double move from starting position
-          if (row === startRow && this.getPiece(newRow + direction, col).type === "blank") {
-            moves.push({ row: newRow + direction, col });
-          }
-        }
-
-        // Capture diagonally
-        if (col > 0 && this.getPiece(newRow, col - 1).color !== piece.color && this.getPiece(newRow, col - 1).type !== "blank") {
-          moves.push({ row: newRow, col: col - 1 });
-        }
-        if (col < 7 && this.getPiece(newRow, col + 1).color !== piece.color && this.getPiece(newRow, col + 1).type !== "blank") {
-          moves.push({ row: newRow, col: col + 1 });
-        }
-      }
-
-      return moves;
+    getBoardRow(viewRowIndex) {
+      return this.myColor === 'white' ? 8 - viewRowIndex : viewRowIndex - 1;
     },
-    listenForGameUpdates() {
-      const gameRef = ref(db, `games/${this.gameId}`);
-
-      onValue(gameRef, (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.val();
-          this.positions = data.board;
-          this.turn = data.turn;
-          this.turnNumber = data.turnNumber;
-        }
-      });
-    }
+    getBoardCol(viewColIndex) {
+      return this.myColor === 'white' ? viewColIndex - 1 : 8 - viewColIndex;
+    },
+    checkLowerCase(piece) {
+      if (typeof piece !== 'string') {
+        console.warn('Invalid piece:', piece);
+        return false;
+      }
+      return piece === piece.toLowerCase() ? false : true;
+    },
+    getSquare(row, col) {
+      const file = String.fromCharCode(65 + col); // A-H
+      const rank = (row + 1).toString(); // 1-8
+      return file + rank;
+    },
   },
 };
 
