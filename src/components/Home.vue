@@ -22,7 +22,14 @@
         </v-card>
       </v-col>
     </v-row>
+    <v-row>
+      Singleplayer mode
+      <v-btn color="secondary" large rounded @click="router.push('/game/singleplayer')">
+        Play Singleplayer Against AI
+      </v-btn>
+    </v-row>
   </v-container>
+  
 </template>
 
 <script>
