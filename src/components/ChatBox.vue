@@ -1,7 +1,11 @@
 <template>
   <v-row>
-    Chat messages will be displayed here.
-    <v-col cols="12">
+    <v-col class="d-flex justify-center">
+      <h2>Chat</h2>
+    </v-col>
+  </v-row>
+  <v-row>
+    <v-col>
       <v-text-field label="Chat is currently disabled... Stay tuned" outlined></v-text-field>
     <!-- <v-btn color="primary" :disabled="true">Send</v-btn> -->
     </v-col>
