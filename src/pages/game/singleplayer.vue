@@ -193,7 +193,7 @@ export default {
         console.error("No card type found for random value:", randomValue);
         return;
       }
-    
+
       return cardType;
     },
     updatePlayerHand(player) {
@@ -230,6 +230,18 @@ export default {
 
       if (legalMoves.length === 0) {
         console.warn("AI has no legal moves it can make with its current hand.");
+
+        // Remove a random card from AI's hand and redraw
+        const randomCardIndex = Math.floor(Math.random() * hand.length);
+        hand.splice(randomCardIndex, 1);
+        this.gameData.player2.hand = hand;
+
+        this.updatePlayerHand('player2');
+
+        console.warn("Passing turn to player 1.");
+        this.passTurn();
+
+
         return;
       }
 
@@ -254,6 +266,7 @@ export default {
 
       this.gameData.player2.hand = hand;
       this.gameData.currentTurn = 'player1';
+      this.gameData.game = game;
     },
     getLegalMoves(piece, row, col, board) {
       const moves = [];
@@ -337,6 +350,9 @@ export default {
 
       this.makeAIMove();
     },
+    passTurn() {
+      this.gameData.game.board.configuration.turn = this.gameData.game.board.configuration.turn === "white" ? "black" : "white";
+    }
   },
   computed: {
     player1Hand() {
