@@ -114,6 +114,15 @@ export default {
         { type: 'w', color: 'black', image: card_wild_black },
         { type: 'w', color: 'white', image: card_wild_white },
       ],
+      cardProbabilities: {
+        p: 27,  // Pawn
+        n: 17,  // Knight
+        b: 17,  // Bishop
+        r: 13,  // Rook
+        q: 10,  // Queen
+        k: 10,  // King
+        w: 6    // Wild
+      }
     };
   },
   async created() {
@@ -131,7 +140,7 @@ export default {
       const player1Color = colors[randomIndex];
       const player2Color = colors[(randomIndex + 1) % colors.length];
 
-
+      // Generate the players
       const player1 = {
         userId: localStorage.getItem('userId') || "player1",
         username: localStorage.getItem('username') || 'Player 1',
@@ -145,29 +154,19 @@ export default {
         hand: [],
       };
 
-      let startingTurn = "player1"; // default
-      if (player1 && player1.color) {
-        startingTurn = (player1.color === "white") ? "player1" : "player2";
-      }
-
-      const game = new JSChessGame();
-
-      const initialDeck = this.generateStartingDeck(); // You can improve this later
-
-      const player1Hand = [];
-      const player2Hand = [];
+      // Generate the player hands
       for (let i = 0; i < this.handSize; i++) {
-        player1Hand.push(initialDeck.pop());
-        player2Hand.push(initialDeck.pop());
+        player1.hand.push(this.drawCard());
+        player2.hand.push(this.drawCard());
       }
-      player1.hand = player1Hand;
-      player2.hand = player2Hand;
+
+      // Generate the initial game
+      const game = new JSChessGame();
 
       this.gameData = {
         player1: player1,
         player2: player2,
         game: game,
-        deck: initialDeck,
         createdAt: Date.now(),
         mode: 'singleplayer',
       };
@@ -177,67 +176,32 @@ export default {
         this.makeAIMove();
       }
     },
-    generateStartingBoard() {
-      const board = Array.from({ length: 8 }, () => Array.from({ length: 8 }, () => ({ color: 'blank', type: 'blank' })));
+    drawCard() {
+      const sumOfProbabilities = Object.values(this.cardProbabilities).reduce((a, b) => a + b, 0);
 
-      const pieces = [
-        { type: "rook", col: 0 },
-        { type: "knight", col: 1 },
-        { type: "bishop", col: 2 },
-        { type: "queen", col: 3 },
-        { type: "king", col: 4 },
-        { type: "bishop", col: 5 },
-        { type: "knight", col: 6 },
-        { type: "rook", col: 7 },
-      ];
-
-      // White pieces
-      pieces.forEach((piece) => {
-        board[7][piece.col] = { color: 'white', type: piece.type };
-        board[6][piece.col] = { color: 'white', type: 'pawn' };
-      });
-
-      // Black pieces
-      pieces.forEach((piece) => {
-        board[0][piece.col] = { color: 'black', type: piece.type };
-        board[1][piece.col] = { color: 'black', type: 'pawn' };
-      });
-
-      return board;
-    },
-    generateStartingDeck() {
-      const deck = [];
-
-      const cards = [
-        { type: "p", numberOfCards: 16 },
-        { type: "n", numberOfCards: 10 },
-        { type: "b", numberOfCards: 10 },
-        { type: "r", numberOfCards: 8 },
-        { type: "q", numberOfCards: 6 },
-        { type: "k", numberOfCards: 6 },
-        { type: "w", numberOfCards: 4 }
-      ];
-
-      cards.forEach((card) => {
-        for (let i = 0; i < card.numberOfCards; i++) {
-          deck.push(card.type);
+      const randomValue = Math.floor(Math.random() * sumOfProbabilities);
+      let cumulativeProbability = 0;
+      let cardType = null;
+      for (const [type, probability] of Object.entries(this.cardProbabilities)) {
+        cumulativeProbability += probability;
+        if (randomValue < cumulativeProbability) {
+          cardType = type;
+          break;
         }
-      });
-
-      // Shuffle the deck
-      for (let i = deck.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [deck[i], deck[j]] = [deck[j], deck[i]];
       }
-
-      return deck;
+      if (!cardType) {
+        console.error("No card type found for random value:", randomValue);
+        return;
+      }
+    
+      return cardType;
     },
     updatePlayerHand(player) {
       if (this.gameData) {
         const playerData = this.gameData[player];
         if (playerData && playerData.hand.length < this.handSize) {
-          const newCards = this.gameData.deck.splice(-1 * (this.handSize - playerData.hand.length));
-          playerData.hand.push(...newCards);
+          const newCard = this.drawCard();
+          playerData.hand.push(newCard);
         }
         this.gameData[player] = playerData;
       }
