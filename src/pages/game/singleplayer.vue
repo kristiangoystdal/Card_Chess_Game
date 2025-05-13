@@ -1,6 +1,6 @@
 <template>
   <v-row>
-    <v-col v-if="gameData" cols="3">
+    <v-col v-if="gameData" cols="3" class="card-mangement">
       <br>
       <v-row>
         <v-col class="d-flex justify-center">
@@ -8,12 +8,22 @@
         </v-col>
       </v-row>
       <v-row>
-        <v-col>
-          <v-row v-for="(card, index) in myCardHand" :key="index">
-            <v-img :src="cardTypes.find(c => c.type === card && c.color === (myColor || 'white')).image" height="100"
-              width="100"></v-img>
-          </v-row>
+        <v-col v-for="(card, index) in myCardHand" :key="index">
+          <v-img :src="cardTypes.find(c => c.type === card && c.color === (myColor || 'white')).image"
+            @click="selectCard(index)" :style="{
+              border: index === this.selectedCardIndex ? '2px solid red' : 'none',
+              borderRadius: '10px',
+            }">
+          </v-img>
         </v-col>
+      </v-row>
+      <v-row class="d-flex justify-center card-actions">
+        <v-btn color="primary" @click="passTurn()">
+          Pass Turn
+        </v-btn>
+        <v-btn color="primary" @click="redrawCard('player1')" :disabled="selectedCardIndex === null">
+          Redraw Card
+        </v-btn>
       </v-row>
     </v-col>
 
@@ -122,7 +132,8 @@ export default {
         q: 10,  // Queen
         k: 10,  // King
         w: 6    // Wild
-      }
+      },
+      selectedCardIndex: null,
     };
   },
   async created() {
@@ -241,7 +252,6 @@ export default {
         console.warn("Passing turn to player 1.");
         this.passTurn();
 
-
         return;
       }
 
@@ -351,8 +361,27 @@ export default {
       this.makeAIMove();
     },
     passTurn() {
+      console.log("Passing turn to next player.");
       this.gameData.game.board.configuration.turn = this.gameData.game.board.configuration.turn === "white" ? "black" : "white";
-    }
+      if (this.gameData.game.board.configuration.turn !== this.myColor) {
+        this.makeAIMove();
+      }
+    },
+    redrawCard(player) {
+      const hand = this.gameData[player].hand;
+      hand.splice(this.selectedCardIndex, 1);
+      this.gameData[player].hand = hand;
+      this.updatePlayerHand(player);
+      this.passTurn();
+      this.selectedCardIndex = null;
+    },
+    selectCard(index) {
+      if (this.selectedCardIndex === index) {
+        this.selectedCardIndex = null;
+      } else {
+        this.selectedCardIndex = index;
+      }
+    },
   },
   computed: {
     player1Hand() {
@@ -406,5 +435,18 @@ export default {
 
 .game-mangement {
   margin-right: 20px;
+}
+
+.card-mangement {
+  margin-left: 40px;
+}
+
+.card-mangement .v-img {
+  width: 100%;
+  height: auto;
+}
+
+.card-mangement .v-col {
+  padding: 2px;
 }
 </style>
