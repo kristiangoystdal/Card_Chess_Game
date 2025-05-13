@@ -16,7 +16,7 @@
     <v-col v-if="gameData" cols="3" class="game-mangement">
       <GameOptions :offeredDraw="this.gameData.offeredDraw" @offer-draw="offerDraw" @resign="resign" />
       <br><br>
-      
+      <ChatBox />
     </v-col>
   </v-row>
 
@@ -385,12 +385,12 @@ export default {
 }
 
 .game-mangement {
-  margin-right: 20px;
+  margin-right: 30px;
   padding-top: 40px;
 }
 
 .card-mangement {
-  margin-left: 40px;
+  margin-left: 30px;
   padding-top: 40px;
 }
 
