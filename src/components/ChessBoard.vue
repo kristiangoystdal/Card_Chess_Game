@@ -152,14 +152,16 @@ export default {
       const player2 = this.player2;
       const player = this.currentTurn === "white" ? player1 : player2;
       const playerHand = [...player.hand];
+
+      // Remove the selected piece from the player's hand
       const cardIndex = playerHand.indexOf(this.selectedPiece.toLowerCase());
       if (cardIndex !== -1) {
         playerHand.splice(cardIndex, 1);
       } else {
         // If the card is not found in the player's hand, it might be a wild card
-        const wildCardIndex = playerHand.indexOf("w");
-        if (wildCardIndex !== -1) {
-          playerHand.splice(wildCardIndex, 1);
+        cardIndex = playerHand.indexOf("w");
+        if (cardIndex !== -1) {
+          playerHand.splice(cardIndex, 1);
         }
       }
 
@@ -174,6 +176,7 @@ export default {
           player1: player1,
           player2: player2,
           game: this.chessGame,
+          cardIndex: cardIndex,
         });
         return;
       } else {

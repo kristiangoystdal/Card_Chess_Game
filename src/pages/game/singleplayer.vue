@@ -1,8 +1,11 @@
 <template>
   <v-row>
+    <!-- Player Hand -->
     <v-col v-if="gameData" cols="3" class="card-mangement">
       <CardMangement :myCardHand="myCardHand" :myColor="myColor" :cardTypes="cardTypes" @redraw-card="redrawCard"
         @pass-turn="passTurn" />
+      {{ this.selectedCardIndex }}
+
     </v-col>
 
     <!-- Chess Board -->
@@ -150,12 +153,12 @@ export default {
 
       return cardType;
     },
-    updatePlayerHand(player) {
+    updatePlayerHand(player, index) {
       if (this.gameData) {
         const playerData = this.gameData[player];
         if (playerData && playerData.hand.length < this.handSize) {
           const newCard = this.drawCard();
-          playerData.hand.push(newCard);
+          playerData.hand.splice(index, 0, newCard);
         }
         this.gameData[player] = playerData;
       }
@@ -190,7 +193,7 @@ export default {
         hand.splice(randomCardIndex, 1);
         this.gameData.player2.hand = hand;
 
-        this.updatePlayerHand('player2');
+        this.updatePlayerHand('player2', randomCardIndex);
 
         console.warn("Passing turn to player 1.");
         this.passTurn();
@@ -209,13 +212,13 @@ export default {
       if (usedIndex !== -1) {
         hand.splice(usedIndex, 1);
       } else {
-        const wildIndex = hand.indexOf('w');
-        if (wildIndex !== -1) {
-          hand.splice(wildIndex, 1);
+        usedIndex = hand.indexOf('w');
+        if (usedIndex !== -1) {
+          hand.splice(usedIndex, 1);
         }
       }
 
-      this.updatePlayerHand('player2');
+      this.updatePlayerHand('player2', usedIndex);
 
       this.gameData.player2.hand = hand;
       this.gameData.currentTurn = 'player1';
@@ -299,7 +302,7 @@ export default {
       this.gameData.player1 = value.player1;
       this.gameData.player2 = value.player2;
 
-      this.updatePlayerHand('player1');
+      this.updatePlayerHand('player1', value.cardIndex);
 
       this.makeAIMove();
     },
@@ -310,11 +313,11 @@ export default {
         this.makeAIMove();
       }
     },
-    redrawCard(player) {
+    redrawCard(player, index) {
       const hand = this.gameData[player].hand;
-      hand.splice(this.selectedCardIndex, 1);
+      hand.splice(index, 1);
       this.gameData[player].hand = hand;
-      this.updatePlayerHand(player);
+      this.updatePlayerHand(player, index);
       this.passTurn();
       this.selectedCardIndex = null;
     },
