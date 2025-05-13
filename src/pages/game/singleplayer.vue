@@ -8,21 +8,21 @@
         </v-col>
       </v-row>
       <v-row>
-        <v-col v-for="(card, index) in myCardHand" :key="index">
+        <v-col cols="4" v-for="(card, index) in myCardHand" :key="index">
           <v-img :src="cardTypes.find(c => c.type === card && c.color === (myColor || 'white')).image"
             @click="selectCard(index)" :style="{
               border: index === this.selectedCardIndex ? '2px solid red' : 'none',
-              borderRadius: '10px',
+              borderRadius: '20px',
             }">
           </v-img>
         </v-col>
       </v-row>
-      <v-row class="d-flex justify-center card-actions">
-        <v-btn color="primary" @click="passTurn()">
-          Pass Turn
-        </v-btn>
-        <v-btn color="primary" @click="redrawCard('player1')" :disabled="selectedCardIndex === null">
+      <v-row class="d-flex justify-center card-actions flex-column">
+        <v-btn color="warning" @click="redrawCard('player1')" :disabled="selectedCardIndex === null">
           Redraw Card
+        </v-btn>
+        <v-btn color="error" @click="passTurn()">
+          Pass Turn
         </v-btn>
       </v-row>
     </v-col>
@@ -107,7 +107,7 @@ export default {
     return {
       gameId: '',
       gameData: null,
-      handSize: 5,
+      handSize: 6,
       cardTypes: [
         { type: 'p', color: 'black', image: card_pawn_black },
         { type: 'p', color: 'white', image: card_pawn_white },
@@ -447,6 +447,19 @@ export default {
 }
 
 .card-mangement .v-col {
-  padding: 2px;
+  padding: 10px;
+}
+
+.card-actions {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-actions .v-btn {
+  margin: 5px 0;
+  width: 50%;
 }
 </style>
