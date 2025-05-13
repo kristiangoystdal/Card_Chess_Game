@@ -1,30 +1,8 @@
 <template>
   <v-row>
     <v-col v-if="gameData" cols="3" class="card-mangement">
-      <br>
-      <v-row>
-        <v-col class="d-flex justify-center">
-          <h2>My Hand</h2>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col cols="4" v-for="(card, index) in myCardHand" :key="index">
-          <v-img :src="cardTypes.find(c => c.type === card && c.color === (myColor || 'white')).image"
-            @click="selectCard(index)" :style="{
-              border: index === this.selectedCardIndex ? '2px solid red' : 'none',
-              borderRadius: '20px',
-            }">
-          </v-img>
-        </v-col>
-      </v-row>
-      <v-row class="d-flex justify-center card-actions flex-column">
-        <v-btn color="warning" @click="redrawCard('player1')" :disabled="selectedCardIndex === null">
-          Redraw Card
-        </v-btn>
-        <v-btn color="error" @click="passTurn()">
-          Pass Turn
-        </v-btn>
-      </v-row>
+      <CardMangement :myCardHand="myCardHand" :myColor="myColor" :cardTypes="cardTypes" @redraw-card="redrawCard"
+        @pass-turn="passTurn" />
     </v-col>
 
     <!-- Chess Board -->
@@ -79,6 +57,7 @@
 
 <script>
 import ChessBoard from '../../components/ChessBoard.vue';
+import CardMangement from '../../components/CardMangement.vue';
 import { useRoute } from 'vue-router';
 
 import card_pawn_black from '../../assets/images/cards/card_p_b.png';
@@ -439,6 +418,7 @@ export default {
 
 .card-mangement {
   margin-left: 40px;
+  padding-top: 40px;
 }
 
 .card-mangement .v-img {
@@ -448,18 +428,5 @@ export default {
 
 .card-mangement .v-col {
   padding: 10px;
-}
-
-.card-actions {
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.card-actions .v-btn {
-  margin: 5px 0;
-  width: 50%;
 }
 </style>
