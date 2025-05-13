@@ -14,50 +14,15 @@
 
     <!-- Options and chat -->
     <v-col v-if="gameData" cols="3" class="game-mangement">
-      <br>
-      <v-row>
-        <v-col class="d-flex justify-center">
-          <h2>Options</h2>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col class="d-flex justify-center">
-          <h4>(Placeholders for now)</h4>
-        </v-col>
-      </v-row>
-      <v-row class="d-flex justify-center">
-        <v-btn>
-          Offer Draw
-        </v-btn>
-        <v-btn>
-          Resign
-        </v-btn>
-        <v-btn>
-          Surrender
-        </v-btn>
-      </v-row>
+      <GameOptions :offeredDraw="this.gameData.offeredDraw" @offer-draw="offerDraw" @resign="resign" />
       <br><br>
-      <v-row>
-        Chat messages will be displayed here.
-        <v-col cols="12">
-          <v-text-field label="Chat is currently disabled... Stay tuned" outlined></v-text-field>
-          <v-btn color="primary" :disabled="true">Send</v-btn>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col cols="12">
-          <p><strong>Player 1:</strong> Hello!</p>
-          <p><strong>Player 2:</strong> Hi there!</p>
-        </v-col>
-      </v-row>
+      
     </v-col>
   </v-row>
 
 </template>
 
 <script>
-import ChessBoard from '../../components/ChessBoard.vue';
-import CardMangement from '../../components/CardMangement.vue';
 import { useRoute } from 'vue-router';
 
 import card_pawn_black from '../../assets/images/cards/card_p_b.png';
@@ -80,8 +45,6 @@ import { Game as JSChessGame } from "js-chess-engine";
 
 export default {
   name: 'GamePage',
-  components: { ChessBoard },
-
   data() {
     return {
       gameId: '',
@@ -159,6 +122,7 @@ export default {
         game: game,
         createdAt: Date.now(),
         mode: 'singleplayer',
+        offeredDraw: false,
       };
       this.gameId = "gameId"
 
@@ -361,6 +325,14 @@ export default {
         this.selectedCardIndex = index;
       }
     },
+    offerDraw() {
+      this.gameData.offeredDraw = true;
+      console.log("Draw offered.");
+    },
+    resign() {
+      console.log("Player resigned.");
+      this.gameData.game.board.configuration.isFinished = true;
+    },
   },
   computed: {
     player1Hand() {
@@ -414,6 +386,7 @@ export default {
 
 .game-mangement {
   margin-right: 20px;
+  padding-top: 40px;
 }
 
 .card-mangement {
