@@ -152,14 +152,16 @@ export default {
       const player2 = this.player2;
       const player = this.currentTurn === "white" ? player1 : player2;
       const playerHand = [...player.hand];
+
+      // Remove the selected piece from the player's hand
       const cardIndex = playerHand.indexOf(this.selectedPiece.toLowerCase());
       if (cardIndex !== -1) {
         playerHand.splice(cardIndex, 1);
       } else {
         // If the card is not found in the player's hand, it might be a wild card
-        const wildCardIndex = playerHand.indexOf("w");
-        if (wildCardIndex !== -1) {
-          playerHand.splice(wildCardIndex, 1);
+        cardIndex = playerHand.indexOf("w");
+        if (cardIndex !== -1) {
+          playerHand.splice(cardIndex, 1);
         }
       }
 
@@ -174,17 +176,18 @@ export default {
           player1: player1,
           player2: player2,
           game: this.chessGame,
+          cardIndex: cardIndex,
         });
         return;
-      }
-
-      const gameRef = ref(db, `games/${this.gameId}`);
-      // Save the game state to Firebase
-      await update(gameRef, {
-        player1: player1,
-        player2: player2,
-        game: this.chessGame,
-      });
+      } else {
+        const gameRef = ref(db, `games/${this.gameId}`);
+        // Save the game state to Firebase
+        await update(gameRef, {
+          player1: player1,
+          player2: player2,
+          game: this.chessGame,
+        });
+      } ß
     },
     selectPiece(row, col) {
       const localGame = this.gameData.game;
@@ -197,10 +200,20 @@ export default {
 
       const piece = this.getPieceAt(row, col);
 
-      // Check if the selected piece is not in your hand
-      if (piece && this.myCardHand && !this.myCardHand.includes(piece.toLowerCase()) && !this.myCardHand.includes("w")) {
-        console.warn("Selected piece is not in your hand:", piece);
-        return;
+      if (piece) {
+        const isEnemyPiece = (
+          (this.myColor === "white" && !this.checkLowerCase(piece)) ||
+          (this.myColor === "black" && this.checkLowerCase(piece))
+        );
+
+        if (!isEnemyPiece) {
+          // Not an enemy piece, check if it's in your hand
+          const pieceType = piece.toLowerCase();
+          if (!this.myCardHand.includes(pieceType) && !this.myCardHand.includes("w")) {
+            console.warn("Piece not in your hand:", piece);
+            return;
+          }
+        }
       }
 
       // Move the selected piece to the clicked cell
@@ -221,7 +234,7 @@ export default {
           this.selectedCol = null;
           this.availableMoves = {};
           return;
-        } 
+        }
 
         // Reset selected piece
         this.selectedPiece = null;
