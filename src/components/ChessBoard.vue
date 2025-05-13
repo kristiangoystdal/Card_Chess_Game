@@ -176,15 +176,15 @@ export default {
           game: this.chessGame,
         });
         return;
-      }
-
-      const gameRef = ref(db, `games/${this.gameId}`);
-      // Save the game state to Firebase
-      await update(gameRef, {
-        player1: player1,
-        player2: player2,
-        game: this.chessGame,
-      });
+      } else {
+        const gameRef = ref(db, `games/${this.gameId}`);
+        // Save the game state to Firebase
+        await update(gameRef, {
+          player1: player1,
+          player2: player2,
+          game: this.chessGame,
+        });
+      } ß
     },
     selectPiece(row, col) {
       const localGame = this.gameData.game;
@@ -197,10 +197,20 @@ export default {
 
       const piece = this.getPieceAt(row, col);
 
-      // Check if the selected piece is not in your hand
-      if (piece && this.myCardHand && !this.myCardHand.includes(piece.toLowerCase()) && !this.myCardHand.includes("w")) {
-        console.warn("Selected piece is not in your hand:", piece);
-        return;
+      if (piece) {
+        const isEnemyPiece = (
+          (this.myColor === "white" && !this.checkLowerCase(piece)) ||
+          (this.myColor === "black" && this.checkLowerCase(piece))
+        );
+
+        if (!isEnemyPiece) {
+          // Not an enemy piece, check if it's in your hand
+          const pieceType = piece.toLowerCase();
+          if (!this.myCardHand.includes(pieceType) && !this.myCardHand.includes("w")) {
+            console.warn("Piece not in your hand:", piece);
+            return;
+          }
+        }
       }
 
       // Move the selected piece to the clicked cell
@@ -221,7 +231,7 @@ export default {
           this.selectedCol = null;
           this.availableMoves = {};
           return;
-        } 
+        }
 
         // Reset selected piece
         this.selectedPiece = null;
