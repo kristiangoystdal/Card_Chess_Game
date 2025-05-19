@@ -89,6 +89,7 @@ export default {
         const newUserRef = await push(queueRef, {
           userId: this.userId,
           username: this.username.trim(),
+          avatar: null,
           joinedAt: Date.now(),
         });
 

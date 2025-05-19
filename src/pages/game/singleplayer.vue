@@ -101,12 +101,14 @@ export default {
         username: localStorage.getItem('username') || 'Player 1',
         color: player1Color,
         hand: [],
+        avatar: null,
       };
       const player2 = {
         userId: "opponent",
         username: 'Opponent',
         color: player2Color,
         hand: [],
+        avatar: null,
       };
 
       // Generate the player hands

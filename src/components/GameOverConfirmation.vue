@@ -6,15 +6,14 @@
       </v-card-title>
 
       <v-card-text class="text-center">
+        
         <v-row>
           <v-col class="text-center">
-            <v-img v-if="player1.avatar !== null" :src="player1?.avatar" :alt="player1?.username || 'Player 1'" />
-            <v-img v-else :src="blank_avatar" :alt="player1?.username || 'Player 1'" />
+            <v-img :src="player1?.avatar || blank_avatar" :alt="player1?.username || 'Player 1'" class="avatar-img" />
             <p>{{ player1?.username || 'Player 1' }}</p>
           </v-col>
           <v-col class="text-center">
-            <v-img v-if="player2.avatar !== null" :src="player2?.avatar" :alt="player2?.username || 'Player 2'" />
-            <v-img v-else :src="blank_avatar" :alt="player2?.username || 'Player 2'" />
+            <v-img :src="player2?.avatar || blank_avatar" :alt="player2?.username || 'Player 2'" class="avatar-img" />
             <p>{{ player2?.username || 'Player 2' }}</p>
           </v-col>
         </v-row>
@@ -27,10 +26,7 @@
   </v-dialog>
 </template>
 
-
-
 <script>
-
 import blank_avatar from '../assets/images/blank_user.png';
 
 export default {
@@ -73,5 +69,13 @@ export default {
 <style scoped>
 .game-over-card {
   padding: 24px;
+}
+
+.avatar-img {
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  max-width: 100px;
+  margin: 0 auto;
 }
 </style>
