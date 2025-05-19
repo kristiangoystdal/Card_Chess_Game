@@ -13,6 +13,7 @@ declare module 'vue' {
     ChatBox: typeof import('./src/components/ChatBox.vue')['default']
     ChessBoard: typeof import('./src/components/ChessBoard.vue')['default']
     GameOptions: typeof import('./src/components/GameOptions.vue')['default']
+    GameOverConfirmation: typeof import('./src/components/GameOverConfirmation.vue')['default']
     Home: typeof import('./src/components/Home.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']

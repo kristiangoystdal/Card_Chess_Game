@@ -4,8 +4,6 @@
     <v-col v-if="gameData" cols="3" class="card-mangement">
       <CardMangement :myCardHand="myCardHand" :myColor="myColor" :cardTypes="cardTypes" @redraw-card="redrawCard"
         @pass-turn="passTurn" />
-      {{ this.selectedCardIndex }}
-
     </v-col>
 
     <!-- Chess Board -->
@@ -23,10 +21,14 @@
     </v-col>
   </v-row>
 
+  <GameOverConfirmation v-if="gameWinner" :gameWinner="gameWinner" :player1="this.gameData.player1"
+    :player2="this.gameData.player2" @close="leaveGame" />
+
 </template>
 
 <script>
 import { useRoute } from 'vue-router';
+import { Game as JSChessGame } from "js-chess-engine";
 
 import card_pawn_black from '../../assets/images/cards/card_p_b.png';
 import card_pawn_white from '../../assets/images/cards/card_p_w.png';
@@ -42,9 +44,6 @@ import card_king_black from '../../assets/images/cards/card_k_b.png';
 import card_king_white from '../../assets/images/cards/card_k_w.png';
 import card_wild_black from '../../assets/images/cards/card_wild_b.png';
 import card_wild_white from '../../assets/images/cards/card_wild_w.png';
-
-import { Game as JSChessGame } from "js-chess-engine";
-
 
 export default {
   name: 'GamePage',
@@ -102,12 +101,14 @@ export default {
         username: localStorage.getItem('username') || 'Player 1',
         color: player1Color,
         hand: [],
+        avatar: null,
       };
       const player2 = {
         userId: "opponent",
         username: 'Opponent',
         color: player2Color,
         hand: [],
+        avatar: null,
       };
 
       // Generate the player hands
@@ -208,7 +209,7 @@ export default {
       game.move(moveChoice.from, moveChoice.to);
 
       // Update AI hand
-      const usedIndex = hand.indexOf(moveChoice.piece.toLowerCase());
+      let usedIndex = hand.indexOf(moveChoice.piece.toLowerCase());
       if (usedIndex !== -1) {
         hand.splice(usedIndex, 1);
       } else {
@@ -304,13 +305,19 @@ export default {
 
       this.updatePlayerHand('player1', value.cardIndex);
 
+      this.victoryState();
+      if (this.gameData.winner) {
+        return;
+      }
+
       this.makeAIMove();
+      this.victoryState();
     },
     passTurn() {
-      console.log("Passing turn to next player.");
       this.gameData.game.board.configuration.turn = this.gameData.game.board.configuration.turn === "white" ? "black" : "white";
       if (this.gameData.game.board.configuration.turn !== this.myColor) {
         this.makeAIMove();
+        this.victoryState();
       }
     },
     redrawCard(player, index) {
@@ -332,9 +339,27 @@ export default {
       this.gameData.offeredDraw = true;
       console.log("Draw offered.");
     },
+    appectDraw() {
+      this.gameData.winner = "draw";
+      console.log("Draw accepted.");
+    },
     resign() {
       console.log("Player resigned.");
-      this.gameData.game.board.configuration.isFinished = true;
+      this.gameData.winner = this.gameData.game.board.configuration.turn === "white" ? "black" : "white";
+    },
+    leaveGame() {
+      this.$router.push('/');
+    },
+    victoryState() {
+      if (!this.hasBlackKing) {
+        this.gameData.winner = "white";
+      } else if (!this.hasWhiteKing) {
+        this.gameData.winner = "black";
+      } else if (this.isDraw) {
+        this.gameData.winner = "draw";
+      } else {
+        this.gameData.winner = null;
+      }
     },
   },
   computed: {
@@ -359,7 +384,35 @@ export default {
     myColor() {
       return this.myPlayer ? this.myPlayer.color : null;
     },
-
+    hasBlackKing() {
+      return this.gameData && Object.values(this.gameData.game.board.configuration.pieces).includes('k');
+    },
+    hasWhiteKing() {
+      return this.gameData && Object.values(this.gameData.game.board.configuration.pieces).includes('K');
+    },
+    onlyKingsLeft() {
+      if (this.gameData) {
+        const pieces = this.gameData.game.board.configuration.pieces;
+        return Object.values(pieces).filter(piece => piece !== 'k' && piece !== 'K').length === 0;
+      }
+      return false;
+    },
+    isDraw() {
+      if (this.gameData && (
+        this.onlyKingsLeft || // Only kings left
+        this.gameData.game.board.configuration.halfmove >= 50 || // 50-move rule
+        this.gameData.drawAccepted // Draw accepted
+      )) {
+        return true;
+      }
+      return false;
+    },
+    gameWinner() {
+      if (this.gameData && this.gameData.winner) {
+        return this.gameData.winner;
+      }
+      return null;
+    },
   },
 };
 </script>

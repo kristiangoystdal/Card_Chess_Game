@@ -154,7 +154,7 @@ export default {
       const playerHand = [...player.hand];
 
       // Remove the selected piece from the player's hand
-      const cardIndex = playerHand.indexOf(this.selectedPiece.toLowerCase());
+      let cardIndex = playerHand.indexOf(this.selectedPiece.toLowerCase());
       if (cardIndex !== -1) {
         playerHand.splice(cardIndex, 1);
       } else {
