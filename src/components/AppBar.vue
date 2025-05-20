@@ -1,22 +1,35 @@
 <template>
-  <header class="app-bar">
-    <nav class="app-bar__nav">
-      <div class="app-bar__logo">
-        <img src="@/assets/logo.png" alt="Logo" />
-      </div>
-      <h1 class="app-bar__title">Card Chess</h1>
-      <ul class="app-bar__menu">
-        <!-- <li><a href="#">Home</a></li>
-        <li><a href="#">About</a></li>
-        <li><a href="#">Contact</a></li> -->
-      </ul>
-    </nav>
-  </header>
+  <v-app-bar dark app>
+    <div class="logo-title">
+      <v-img class="logo" src="@/assets/logo.png"></v-img>
+      <span class="title">Card Chess</span>
+    </div>
+    <div class="actions">
+      <v-btn text @click="toggleRules">Rules</v-btn>
+    </div>
+  </v-app-bar>
+
+  <Rules v-model="showRules" @close="toggleRules" />
 </template>
 
 <script>
+import logo from "../assets/logo.png";
+
 export default {
   name: "AppBar",
+  components: {
+    logo,
+  },
+  data() {
+    return {
+      showRules: false,
+    };
+  },
+  methods: {
+    toggleRules() {
+      this.showRules = !this.showRules;
+    },
+  },
 };
 </script>
 
@@ -27,43 +40,32 @@ export default {
   height: 10vh;
   display: flex;
   align-items: center;
-  padding: 0 1rem;
+  padding: 0 1rem;;
 }
 
-.app-bar__nav {
+.logo-title {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  width: 100%;
-}
-
-.app-bar__logo img {
   height: 100%;
-  max-height: 8vh;
+}
+
+.logo{
   width: auto;
-  max-width: 100%;
-  object-fit: contain;
+  height: 90% !important;
+  aspect-ratio: 1;
+  margin: 0 10px;
 }
 
-.app-bar__title {
-  font-size: 1.5rem;
-  margin-left: 1rem;
-}
-
-.app-bar__menu {
-  list-style: none;
-  display: flex;
-  gap: 1rem;
-  margin: 0;
-  padding: 0;
-}
-
-.app-bar__menu a {
+.title{
+  font-size: 2rem;
+  font-weight: bold;
   color: #fff;
-  text-decoration: none;
 }
 
-.app-bar__menu a:hover {
-  text-decoration: underline;
+.actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  margin-right: 20px;
 }
 </style>
