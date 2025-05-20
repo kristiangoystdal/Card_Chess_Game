@@ -49,7 +49,7 @@
       </v-card-text>
 
       <v-card-actions class="justify-center">
-        <v-btn color="primary" @click="$emit('close')">Close</v-btn>
+        <v-btn variant="tonal" color="error" @click="$emit('close')">Close</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
