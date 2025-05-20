@@ -15,10 +15,20 @@
           <h3 class="section-header">Cards &amp; Player Hand</h3>
           <p>
             On your turn, you can only move pieces using the cards in your hand.<br />
+            Each player has a hand of 6 cards, and you can draw new cards as you play. <br />
             Each chess piece has a matching card that allows you to move that piece.<br />
-            Special <strong>wild cards</strong> grant unique abilities or moves.<br />
-            Each player has a hand of 6 cards, and you can draw new cards as you play.
+
           </p>
+          <p>
+            Special <strong>wild cards</strong> grant unique abilities or moves.<br />
+            The wild cards are:<br />
+          </p>
+          <ul>
+            <li>Star: Move any piece</li>
+            <!-- <li>Swap two of your own pieces</li>
+              <li>Swap a card with your opponent</li>
+              <li>Move any piece twice</li> -->
+          </ul>
 
           <v-divider class="my-4" />
           <h3 class="section-header">A Typical Turn</h3>
@@ -30,7 +40,6 @@
           </ol>
 
           <p>
-            If you play a wild card, you can choose any piece to move.<br />
             If you can not make a legal move, you must pass your turn or swap a card.
           </p>
 
@@ -111,5 +120,10 @@ export default {
 
 .rules-content li {
   margin-bottom: 8px;
+}
+
+.rules-content ul {
+  margin: 10px 0 16px 0;
+  padding-left: 1.5rem;
 }
 </style>
