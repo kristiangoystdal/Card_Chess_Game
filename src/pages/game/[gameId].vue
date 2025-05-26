@@ -9,7 +9,7 @@
     <!-- Chess Board -->
     <v-col class="game-board">
       <v-row class="chess-board-container">
-        <ChessBoard :gameData="gameData" :gameId="gameId" @gameUpdated="endPlayerTurn" />
+        <ChessBoard :gameData="gameData" :gameId="gameId" @gameUpdated="endPlayerTurn"/>
       </v-row>
     </v-col>
 
@@ -150,6 +150,10 @@ export default {
 
       onValue(gameRef, (snapshot) => {
         if (snapshot.exists()) {
+          console.log('Game data updated from Firebase');
+
+          this.updatePlayerHand(this.myPlayerNr, this.selectedCardIndex);
+
           const data = snapshot.val();
 
           // Rehydrate JSChessGame instance
@@ -159,7 +163,11 @@ export default {
 
           data.game = newGame;
           this.gameData = data;
+          this.player1 = data.player1;
+          this.player2 = data.player2;
           console.log('Game data updated:', this.gameData);
+
+          this.victoryState();
         } else {
 
           console.error('Game does not exist.');
@@ -188,13 +196,17 @@ export default {
     },
     updatePlayerHand(player, index) {
       if (this.gameData) {
+        console.log(`Updating hand for player: ${player}, index: ${index}`);
         const playerData = this.gameData[player];
+        console.log("Player hand length:", playerData.hand.length, "Hand size:", this.handSize);
+        // If the player has less than the hand size, draw a new card
         if (playerData && playerData.hand.length < this.handSize) {
+          console.log(`Drawing a new card for player: ${player}`);
           const newCard = this.drawCard();
           playerData.hand.push(newCard);
           console.log(`Updated ${player}'s hand:`, playerData.hand);
+          this.gameData = { ...this.gameData, [player]: playerData };
         }
-        this.gameData = { ...this.gameData, [player]: playerData };
       }
     },
     getLegalMoves(piece, row, col, board) {
@@ -278,7 +290,19 @@ export default {
       this.updatePlayerHand(this.myPlayerNr, this.selectedCardIndex);
       this.victoryState();
 
+
       await this.saveGameData();
+    },
+    async saveGameData() {
+      const gameRef = dbRef(db, `games/${this.gameId}`);
+      await update(gameRef, {
+        game: this.gameData.game,
+        player1: this.gameData.player1,
+        player2: this.gameData.player2,
+        offeredDraw: this.gameData.offeredDraw,
+        winner: this.gameData.winner
+      });
+      console.log('Game data saved successfully.');
     },
     passTurn() {
       this.gameData.game.board.configuration.turn = this.gameData.game.board.configuration.turn === "white" ? "black" : "white";
