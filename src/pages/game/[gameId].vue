@@ -2,6 +2,7 @@
   <v-row>
     <!-- Player Hand -->
     <v-col v-if="gameData" cols="3" class="card-mangement">
+      {{ this.gameData.game.board.configuration.turn === this.myColor ? "Your turn" : "Waiting for opponent's turn" }}
       <CardMangement :myCardHand="myCardHand" :myColor="myColor" :cardTypes="cardTypes" @redraw-card="redrawCard"
         @pass-turn="passTurn" />
     </v-col>
@@ -150,6 +151,8 @@ export default {
 
       onValue(gameRef, (snapshot) => {
         if (snapshot.exists()) {
+          this.updatePlayerHand(this.myPlayerNr);
+
           const data = snapshot.val();
 
           // Rehydrate JSChessGame instance
@@ -159,7 +162,11 @@ export default {
 
           data.game = newGame;
           this.gameData = data;
+          this.player1 = data.player1;
+          this.player2 = data.player2;
           console.log('Game data updated:', this.gameData);
+
+          this.victoryState();
         } else {
 
           console.error('Game does not exist.');
@@ -186,15 +193,15 @@ export default {
 
       return cardType;
     },
-    updatePlayerHand(player, index) {
+    updatePlayerHand(player) {
       if (this.gameData) {
         const playerData = this.gameData[player];
+        // If the player has less than the hand size, draw a new card
         if (playerData && playerData.hand.length < this.handSize) {
           const newCard = this.drawCard();
           playerData.hand.push(newCard);
-          console.log(`Updated ${player}'s hand:`, playerData.hand);
+          this.gameData = { ...this.gameData, [player]: playerData };
         }
-        this.gameData = { ...this.gameData, [player]: playerData };
       }
     },
     getLegalMoves(piece, row, col, board) {
@@ -275,10 +282,22 @@ export default {
       this.gameData.player1 = value.player1;
       this.gameData.player2 = value.player2;
 
-      this.updatePlayerHand(this.myPlayerNr, this.selectedCardIndex);
+      this.updatePlayerHand(this.myPlayerNr);
       this.victoryState();
 
+
       await this.saveGameData();
+    },
+    async saveGameData() {
+      const gameRef = dbRef(db, `games/${this.gameId}`);
+      await update(gameRef, {
+        game: this.gameData.game,
+        player1: this.gameData.player1,
+        player2: this.gameData.player2,
+        offeredDraw: this.gameData.offeredDraw,
+        winner: this.gameData.winner
+      });
+      console.log('Game data saved successfully.');
     },
     passTurn() {
       this.gameData.game.board.configuration.turn = this.gameData.game.board.configuration.turn === "white" ? "black" : "white";
@@ -290,13 +309,18 @@ export default {
         });
       }
     },
-    redrawCard(player, index) {
-      const hand = this.gameData[player].hand;
-      hand.splice(index, 1);
-      this.gameData[player].hand = hand;
-      this.updatePlayerHand(player, index);
-      this.passTurn();
-      this.selectedCardIndex = null;
+    redrawCard(index) {
+      if (index !== null && this.myCardHand.length > 0 && this.gameData.game.board.configuration.turn === this.myColor) {
+        const player = this.myPlayerNr;
+        const cardType = this.myCardHand[index];
+        // Remove the card from the player's hand
+        this.myPlayer.hand.splice(index, 1);
+        // Draw a new card
+        this.updatePlayerHand(player);
+        this.passTurn();
+      } else {
+        console.error("Cannot redraw card: Invalid index or it's not your turn.");
+      }
     },
     selectCard(index) {
       if (this.selectedCardIndex === index) {
