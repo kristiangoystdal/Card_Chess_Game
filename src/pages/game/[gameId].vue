@@ -1,77 +1,37 @@
 <template>
   <v-row>
-    <v-col v-if="gameData" cols="3">
-      <br>
-      <v-row>
-        <v-col class="d-flex justify-center">
-          <h2>My Hand</h2>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col>
-          <v-row v-for="(card, index) in myCardHand" :key="index">
-            <v-img :src="cardTypes.find(c => c.type === card && c.color === (myColor || 'white')).image" height="100"
-              width="100"></v-img>
-          </v-row>
-        </v-col>
-      </v-row>
+    <!-- Player Hand -->
+    <v-col v-if="gameData" cols="3" class="card-mangement">
+      {{ this.gameData.game.board.configuration.turn === this.myColor ? "Your turn" : "Waiting for opponent's turn" }}
+      <CardMangement :myCardHand="myCardHand" :myColor="myColor" :cardTypes="cardTypes" @redraw-card="redrawCard"
+        @pass-turn="passTurn" />
     </v-col>
 
     <!-- Chess Board -->
     <v-col class="game-board">
       <v-row class="chess-board-container">
-        <ChessBoard v-if="gameData" :gameData="gameData" :gameId="gameId" />
+        <ChessBoard :gameData="gameData" :gameId="gameId" @gameUpdated="endPlayerTurn" />
       </v-row>
     </v-col>
 
     <!-- Options and chat -->
     <v-col v-if="gameData" cols="3" class="game-mangement">
-      <br>
-      <v-row>
-        <v-col class="d-flex justify-center">
-          <h2>Options</h2>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col class="d-flex justify-center">
-          <h4>(Placeholders for now)</h4>
-        </v-col>
-      </v-row>
-      <v-row class="d-flex justify-center">
-        <v-btn>
-          Offer Draw
-        </v-btn>
-        <v-btn>
-          Resign
-        </v-btn>
-        <v-btn>
-          Surrender
-        </v-btn>
-      </v-row>
+      <GameOptions :offeredDraw="this.gameData.offeredDraw" @offer-draw="offerDraw" @resign="resign" />
       <br><br>
-      <v-row>
-        Chat messages will be displayed here.
-        <v-col cols="12">
-          <v-text-field label="Chat is currently disabled... Stay tuned" outlined></v-text-field>
-          <v-btn color="primary" :disabled="true">Send</v-btn>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col cols="12">
-          <p><strong>Player 1:</strong> Hello!</p>
-          <p><strong>Player 2:</strong> Hi there!</p>
-        </v-col>
-      </v-row>
+      <ChatBox />
     </v-col>
   </v-row>
+
+  <GameOverConfirmation v-if="gameWinner" :gameWinner="gameWinner" :player1="this.gameData.player1"
+    :player2="this.gameData.player2" @close="leaveGame" />
 
 </template>
 
 <script>
 import { db } from '../../js/firebaseConfig';
 import { ref as dbRef, set, get, onValue, child, update } from 'firebase/database';
-import ChessBoard from '../../components/ChessBoard.vue';
 import { useRoute } from 'vue-router';
+import { Game as JSChessGame } from "js-chess-engine";
 
 import card_pawn_black from '../../assets/images/cards/card_p_b.png';
 import card_pawn_white from '../../assets/images/cards/card_p_w.png';
@@ -90,36 +50,44 @@ import card_wild_white from '../../assets/images/cards/card_wild_w.png';
 
 export default {
   name: 'GamePage',
-  components: { ChessBoard },
-
   data() {
     return {
       gameId: '',
       gameData: null,
-      handSize: 5,
+      handSize: 6,
       cardTypes: [
-        { type: 'pawn', color: 'black', image: card_pawn_black },
-        { type: 'pawn', color: 'white', image: card_pawn_white },
-        { type: 'knight', color: 'black', image: card_knight_black },
-        { type: 'knight', color: 'white', image: card_knight_white },
-        { type: 'bishop', color: 'black', image: card_bishop_black },
-        { type: 'bishop', color: 'white', image: card_bishop_white },
-        { type: 'rook', color: 'black', image: card_rook_black },
-        { type: 'rook', color: 'white', image: card_rook_white },
-        { type: 'queen', color: 'black', image: card_queen_black },
-        { type: 'queen', color: 'white', image: card_queen_white },
-        { type: 'king', color: 'black', image: card_king_black },
-        { type: 'king', color: 'white', image: card_king_white },
-        { type: 'wild', color: 'black', image: card_wild_black },
-        { type: 'wild', color: 'white', image: card_wild_white },
+        { type: 'p', color: 'black', image: card_pawn_black },
+        { type: 'p', color: 'white', image: card_pawn_white },
+        { type: 'n', color: 'black', image: card_knight_black },
+        { type: 'n', color: 'white', image: card_knight_white },
+        { type: 'b', color: 'black', image: card_bishop_black },
+        { type: 'b', color: 'white', image: card_bishop_white },
+        { type: 'r', color: 'black', image: card_rook_black },
+        { type: 'r', color: 'white', image: card_rook_white },
+        { type: 'q', color: 'black', image: card_queen_black },
+        { type: 'q', color: 'white', image: card_queen_white },
+        { type: 'k', color: 'black', image: card_king_black },
+        { type: 'k', color: 'white', image: card_king_white },
+        { type: 'w', color: 'black', image: card_wild_black },
+        { type: 'w', color: 'white', image: card_wild_white },
       ],
+      cardProbabilities: {
+        p: 27,  // Pawn
+        n: 17,  // Knight
+        b: 17,  // Bishop
+        r: 13,  // Rook
+        q: 10,  // Queen
+        k: 10,  // King
+        w: 6    // Wild
+      },
+      selectedCardIndex: null,
     };
   },
   async created() {
     const route = useRoute();
     this.gameId = route.params.gameId;
 
-    await this.checkOrCreateGame(); // ✅ NEW
+    await this.checkOrCreateGame();
     this.listenToGame();
   },
   methods: {
@@ -128,7 +96,7 @@ export default {
       const gameSnapshot = await get(child(dbRootRef, `games/${this.gameId}`));
       const gameData = gameSnapshot.val();
 
-      if (gameData.board) {
+      if (gameData.game) {
         this.gameData = gameData;
         console.log('Game already exists, loading existing game...');
         return;
@@ -146,142 +114,247 @@ export default {
         startingTurn = (player1.color === "white") ? "player1" : "player2";
       }
 
-      const initialBoard = this.generateStartingBoard(); // You can improve this later
-
-      const initialDeck = this.generateStartingDeck(); // You can improve this later
-
-      const player1Hand = [];
-      const player2Hand = [];
-      for (let i = 0; i < this.handSize; i++) {
-        player1Hand.push(initialDeck.pop());
-        player2Hand.push(initialDeck.pop());
+      // If player hands are not set, initialize them
+      if (!player1.hand) {
+        player1.hand = [];
       }
-      player1.hand = player1Hand;
-      player2.hand = player2Hand;
+      if (!player2.hand) {
+        player2.hand = [];
+      }
+      // Generate the player hands
+      for (let i = 0; i < this.handSize; i++) {
+        player1.hand.push(this.drawCard());
+        player2.hand.push(this.drawCard());
+      }
+
+      // Generate the initial game
+      const game = new JSChessGame();
 
       const gameRef = dbRef(db, `games/${this.gameId}`);
       await update(gameRef, {
-        deck: initialDeck,
-        board: initialBoard,
-        currentTurn: startingTurn,
-        turnNumber: 0,
         player1: player1,
         player2: player2,
+        game: game,
+        createdAt: Date.now(),
+        offeredDraw: false,
+        gamewinner: null,
         mode: 'multiplayer',
       });
-
-      this.gameData = {
-        player1: player1,
-        player2: player2,
-        currentTurn: startingTurn,
-        board: initialBoard,
-        deck: initialDeck,
-        turnNumber: 0,
-        mode: 'multiplayer',
-      };
 
       this.gameId = this.gameId;
 
       console.log('Game created successfully with white to start.');
 
     },
-
     listenToGame() {
       const gameRef = dbRef(db, `games/${this.gameId}`);
 
       onValue(gameRef, (snapshot) => {
         if (snapshot.exists()) {
-          this.gameData = snapshot.val();
+          this.updatePlayerHand(this.myPlayerNr);
 
-          // Check if the game has a deck and if it's empty
-          // If the deck is empty, generate a new one
-          if (this.gameData.deck && this.gameData.deck.length < 1) {
-            this.gameData.deck = this.generateStartingDeck(); // Refill the deck if empty
-            const gameRef = dbRef(db, `games/${this.gameId}`);
-            update(gameRef, {
-              deck: this.gameData.deck,
-            });
-          }
+          const data = snapshot.val();
 
-          // Check the player hands and refill if necessary
-          const updates = {};
+          // Rehydrate JSChessGame instance
+          const boardConfig = data.game.board.configuration;
+          const newGame = new JSChessGame();
+          newGame.board.configuration = boardConfig;
 
-          if (this.gameData.player1.hand.length < this.handSize) {
-            const newCards = this.gameData.deck.splice(-1 * (this.handSize - this.gameData.player1.hand.length));
-            this.gameData.player1.hand.push(...newCards);
-            updates[`player1/hand`] = this.gameData.player1.hand;
-          }
+          data.game = newGame;
+          this.gameData = data;
+          this.player1 = data.player1;
+          this.player2 = data.player2;
+          console.log('Game data updated:', this.gameData);
 
-          if (this.gameData.player2.hand.length < this.handSize) {
-            const newCards = this.gameData.deck.splice(-1 * (this.handSize - this.gameData.player2.hand.length));
-            this.gameData.player2.hand.push(...newCards);
-            updates[`player2/hand`] = this.gameData.player2.hand;
-          }
-
-          if (Object.keys(updates).length > 0) {
-            updates.deck = this.gameData.deck;
-            update(gameRef, updates);
-          }
+          this.victoryState();
         } else {
+
           console.error('Game does not exist.');
         }
       });
     },
-    generateStartingBoard() {
-      const board = Array.from({ length: 8 }, () => Array.from({ length: 8 }, () => ({ color: 'blank', type: 'blank' })));
+    drawCard() {
+      const sumOfProbabilities = Object.values(this.cardProbabilities).reduce((a, b) => a + b, 0);
 
-      const pieces = [
-        { type: "rook", col: 0 },
-        { type: "knight", col: 1 },
-        { type: "bishop", col: 2 },
-        { type: "queen", col: 3 },
-        { type: "king", col: 4 },
-        { type: "bishop", col: 5 },
-        { type: "knight", col: 6 },
-        { type: "rook", col: 7 },
-      ];
-
-      // White pieces
-      pieces.forEach((piece) => {
-        board[0][piece.col] = { color: 'white', type: piece.type };
-        board[1][piece.col] = { color: 'white', type: 'pawn' };
-      });
-
-      // Black pieces
-      pieces.forEach((piece) => {
-        board[7][piece.col] = { color: 'black', type: piece.type };
-        board[6][piece.col] = { color: 'black', type: 'pawn' };
-      });
-
-      return board;
-    },
-    generateStartingDeck() {
-      const deck = [];
-
-      const cards = [
-        { type: "pawn", numberOfCards: 16 },
-        { type: "knight", numberOfCards: 10 },
-        { type: "bishop", numberOfCards: 10 },
-        { type: "rook", numberOfCards: 8 },
-        { type: "queen", numberOfCards: 6 },
-        { type: "king", numberOfCards: 6 },
-        { type: "wild", numberOfCards: 4 }
-      ];
-
-      cards.forEach((card) => {
-        for (let i = 0; i < card.numberOfCards; i++) {
-          deck.push(card.type);
+      const randomValue = Math.floor(Math.random() * sumOfProbabilities);
+      let cumulativeProbability = 0;
+      let cardType = null;
+      for (const [type, probability] of Object.entries(this.cardProbabilities)) {
+        cumulativeProbability += probability;
+        if (randomValue < cumulativeProbability) {
+          cardType = type;
+          break;
         }
-      });
-
-      // Shuffle the deck
-      for (let i = deck.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [deck[i], deck[j]] = [deck[j], deck[i]];
+      }
+      if (!cardType) {
+        console.error("No card type found for random value:", randomValue);
+        return;
       }
 
-      return deck;
-    }
+      return cardType;
+    },
+    updatePlayerHand(player) {
+      if (this.gameData) {
+        const playerData = this.gameData[player];
+        // If the player has less than the hand size, draw a new card
+        if (playerData && playerData.hand.length < this.handSize) {
+          const newCard = this.drawCard();
+          playerData.hand.push(newCard);
+          this.gameData = { ...this.gameData, [player]: playerData };
+        }
+      }
+    },
+    getLegalMoves(piece, row, col, board) {
+      const moves = [];
+
+      const isEnemy = (r, c) => board[r][c].color !== piece.color && board[r][c].type !== "blank";
+      const isBlank = (r, c) => board[r][c].type === "blank";
+
+      const inBounds = (r, c) => r >= 0 && r <= 7 && c >= 0 && c <= 7;
+
+      if (piece.type === "pawn") {
+        const dir = piece.color === "white" ? 1 : -1;
+        if (inBounds(row + dir, col) && isBlank(row + dir, col)) {
+          moves.push({ row: row + dir, col });
+        }
+        if (inBounds(row + dir, col - 1) && isEnemy(row + dir, col - 1)) {
+          moves.push({ row: row + dir, col: col - 1 });
+        }
+        if (inBounds(row + dir, col + 1) && isEnemy(row + dir, col + 1)) {
+          moves.push({ row: row + dir, col: col + 1 });
+        }
+      }
+
+      if (piece.type === "king") {
+        const directions = [
+          [-1, -1], [-1, 0], [-1, 1],
+          [0, -1], [0, 1],
+          [1, -1], [1, 0], [1, 1],
+        ];
+        for (const [dr, dc] of directions) {
+          const nr = row + dr, nc = col + dc;
+          if (inBounds(nr, nc) && (isBlank(nr, nc) || isEnemy(nr, nc))) {
+            moves.push({ row: nr, col: nc });
+          }
+        }
+      }
+
+      if (piece.type === "knight") {
+        const knightMoves = [
+          [-2, -1], [-1, -2], [1, -2], [2, -1],
+          [2, 1], [1, 2], [-1, 2], [-2, 1],
+        ];
+        for (const [dr, dc] of knightMoves) {
+          const nr = row + dr, nc = col + dc;
+          if (inBounds(nr, nc) && (isBlank(nr, nc) || isEnemy(nr, nc))) {
+            moves.push({ row: nr, col: nc });
+          }
+        }
+      }
+
+      if (piece.type === "bishop" || piece.type === "rook" || piece.type === "queen") {
+        const directions = piece.type === "bishop" ? [[-1, -1], [-1, 1], [1, -1], [1, 1]] :
+          piece.type === "rook" ? [[-1, 0], [0, -1], [0, 1], [1, 0]] :
+            [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
+
+        for (const [dr, dc] of directions) {
+          let nr = row + dr;
+          let nc = col + dc;
+          while (inBounds(nr, nc)) {
+            if (isBlank(nr, nc)) {
+              moves.push({ row: nr, col: nc });
+            } else if (isEnemy(nr, nc)) {
+              moves.push({ row: nr, col: nc });
+              break;
+            } else {
+              break;
+            }
+            nr += dr;
+            nc += dc;
+          }
+        }
+      }
+
+      return moves;
+    },
+    async endPlayerTurn(value) {
+      this.gameData.game = value.game;
+      this.gameData.player1 = value.player1;
+      this.gameData.player2 = value.player2;
+
+      this.updatePlayerHand(this.myPlayerNr);
+      this.victoryState();
+
+
+      await this.saveGameData();
+    },
+    async saveGameData() {
+      const gameRef = dbRef(db, `games/${this.gameId}`);
+      await update(gameRef, {
+        game: this.gameData.game,
+        player1: this.gameData.player1,
+        player2: this.gameData.player2,
+        offeredDraw: this.gameData.offeredDraw,
+        winner: this.gameData.winner
+      });
+      console.log('Game data saved successfully.');
+    },
+    passTurn() {
+      this.gameData.game.board.configuration.turn = this.gameData.game.board.configuration.turn === "white" ? "black" : "white";
+      if (this.gameData.game.board.configuration.turn !== this.myColor) {
+        this.endPlayerTurn({
+          game: this.gameData.game,
+          player1: this.gameData.player1,
+          player2: this.gameData.player2
+        });
+      }
+    },
+    redrawCard(index) {
+      if (index !== null && this.myCardHand.length > 0 && this.gameData.game.board.configuration.turn === this.myColor) {
+        const player = this.myPlayerNr;
+        const cardType = this.myCardHand[index];
+        // Remove the card from the player's hand
+        this.myPlayer.hand.splice(index, 1);
+        // Draw a new card
+        this.updatePlayerHand(player);
+        this.passTurn();
+      } else {
+        console.error("Cannot redraw card: Invalid index or it's not your turn.");
+      }
+    },
+    selectCard(index) {
+      if (this.selectedCardIndex === index) {
+        this.selectedCardIndex = null;
+      } else {
+        this.selectedCardIndex = index;
+      }
+    },
+    offerDraw() {
+      this.gameData.offeredDraw = true;
+      console.log("Draw offered.");
+    },
+    appectDraw() {
+      this.gameData.winner = "draw";
+      console.log("Draw accepted.");
+    },
+    resign() {
+      console.log("Player resigned.");
+      this.gameData.winner = this.gameData.game.board.configuration.turn === "white" ? "black" : "white";
+    },
+    leaveGame() {
+      this.$router.push('/');
+    },
+    victoryState() {
+      if (!this.hasBlackKing) {
+        this.gameData.winner = "white";
+      } else if (!this.hasWhiteKing) {
+        this.gameData.winner = "black";
+      } else if (this.isDraw) {
+        this.gameData.winner = "draw";
+      } else {
+        this.gameData.winner = null;
+      }
+    },
   },
   computed: {
     player1Hand() {
@@ -299,13 +372,47 @@ export default {
       }
       return null;
     },
+    myPlayerNr() {
+      if (this.myPlayer) {
+        return this.myPlayer.color === 'white' ? "player1" : "player2";
+      }
+      return null;
+    },
     myCardHand() {
       return this.myPlayer ? this.myPlayer.hand : null;
     },
     myColor() {
       return this.myPlayer ? this.myPlayer.color : null;
     },
-
+    hasBlackKing() {
+      return this.gameData && Object.values(this.gameData.game.board.configuration.pieces).includes('k');
+    },
+    hasWhiteKing() {
+      return this.gameData && Object.values(this.gameData.game.board.configuration.pieces).includes('K');
+    },
+    onlyKingsLeft() {
+      if (this.gameData) {
+        const pieces = this.gameData.game.board.configuration.pieces;
+        return Object.values(pieces).filter(piece => piece !== 'k' && piece !== 'K').length === 0;
+      }
+      return false;
+    },
+    isDraw() {
+      if (this.gameData && (
+        this.onlyKingsLeft || // Only kings left
+        this.gameData.game.board.configuration.halfmove >= 50 || // 50-move rule
+        this.gameData.drawAccepted // Draw accepted
+      )) {
+        return true;
+      }
+      return false;
+    },
+    gameWinner() {
+      if (this.gameData && this.gameData.winner) {
+        return this.gameData.winner;
+      }
+      return null;
+    },
   },
 };
 </script>
@@ -334,6 +441,21 @@ export default {
 }
 
 .game-mangement {
-  margin-right: 20px;
+  margin-right: 30px;
+  padding-top: 40px;
+}
+
+.card-mangement {
+  margin-left: 30px;
+  padding-top: 40px;
+}
+
+.card-mangement .v-img {
+  width: 100%;
+  height: auto;
+}
+
+.card-mangement .v-col {
+  padding: 10px;
 }
 </style>

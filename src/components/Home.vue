@@ -44,7 +44,7 @@
           <v-btn v-if="joinedQueue" color="error" large rounded @click="leaveQueue">
             Leave Queue
           </v-btn>
-          <v-btn v-else color="primary" large rounded @click="joinQueue" :disabled="true">
+          <v-btn v-else color="primary" large rounded @click="joinQueue" :disabled="false">
             Join Queue
           </v-btn>
         </v-row>

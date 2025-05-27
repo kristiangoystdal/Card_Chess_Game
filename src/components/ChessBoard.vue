@@ -144,9 +144,6 @@ export default {
   },
   methods: {
     async saveGame() {
-      const nextTurn = this.currentTurn === "white" ? "black" : "white";
-      this.chessGame.board.configuration.turn = nextTurn;
-
       // Check which player is making the move and update their hand
       const player1 = this.player1;
       const player2 = this.player2;
@@ -171,23 +168,16 @@ export default {
         player2.hand = playerHand;
       }
 
-      if (this.gamemode === "singleplayer") {
-        this.$emit("gameUpdated", {
-          player1: player1,
-          player2: player2,
-          game: this.chessGame,
-          cardIndex: cardIndex,
-        });
-        return;
-      } else {
-        const gameRef = ref(db, `games/${this.gameId}`);
-        // Save the game state to Firebase
-        await update(gameRef, {
-          player1: player1,
-          player2: player2,
-          game: this.chessGame,
-        });
-      } ß
+      const nextTurn = this.currentTurn === "white" ? "black" : "white";
+      this.chessGame.board.configuration.turn = nextTurn;
+
+      this.$emit("gameUpdated", {
+        player1: player1,
+        player2: player2,
+        game: this.chessGame,
+        cardIndex: cardIndex,
+      });
+
     },
     selectPiece(row, col) {
       const localGame = this.gameData.game;
@@ -285,7 +275,7 @@ export default {
       const rank = (row + 1).toString(); // 1-8
       return file + rank;
     },
-  },
+  }
 };
 
 </script>
