@@ -15,7 +15,7 @@
     </v-col>
   </v-row>
   <v-row class="d-flex justify-center card-actions flex-column">
-    <v-btn color="warning" @click="redrawCard('player1')" :disabled="selectedCardIndex === null">
+    <v-btn color="warning" @click="redrawCard" :disabled="selectedCardIndex === null">
       Redraw Card
     </v-btn>
     <v-btn color="error" @click="passTurn()">
@@ -56,8 +56,8 @@ export default {
         this.selectedCardIndex = index;
       }
     },
-    redrawCard(player) {
-      this.$emit("redraw-card", player, this.selectedCardIndex);
+    redrawCard() {
+      this.$emit("redraw-card", this.selectedCardIndex);
       this.selectedCardIndex = null;
     },
     passTurn() {
