@@ -159,10 +159,7 @@ export default {
         from: from,
         to: to
       };
-
     }
-
-
   },
   methods: {
     async saveGame() {
@@ -314,7 +311,6 @@ export default {
   box-sizing: border-box;
 }
 
-
 .row {
   display: contents;
 }
@@ -336,16 +332,15 @@ export default {
 }
 
 .last-move-from {
-  outline: 3px solid orange;
-  outline-offset: -3px;
-  box-sizing: border-box;
+  background-color: #ffe169;
+  /* softer yellow */
 }
 
 .last-move-to {
-  outline: 3px solid limegreen;
-  outline-offset: -3px;
-  box-sizing: border-box;
+  background-color: #ffd900;
+  /* bold yellow */
 }
+
 
 /* Piece image inside a cell */
 .cell img {
