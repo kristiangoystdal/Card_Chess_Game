@@ -40,8 +40,6 @@
 
 
 <script>
-import { move } from "js-chess-engine";
-
 import whitePawn from "@/assets/images/chess_pieces/pawn-w.svg";
 import whiteRook from "@/assets/images/chess_pieces/rook-w.svg";
 import whiteKnight from "@/assets/images/chess_pieces/knight-w.svg";
@@ -82,8 +80,10 @@ export default {
       selectedPiece: null,
       selectedRow: null,
       selectedCol: null,
+      lastMove: null,
     };
   },
+  emits: ['gameUpdated'],
   props: {
     gameData: {
       type: Object,
@@ -148,17 +148,12 @@ export default {
       return this.chessGame?.getHistory(false);
     },
     lastMoveSquares() {
-      const history = this.chessGame?.getHistory(false);
-      if (!history || history.length === 0) return null;
+      if (!this.gameData.lastMove) return null;
 
-      const lastMove = history[history.length - 1];
-      const from = lastMove.from.toUpperCase(); // e.g. "E2"
-      const to = lastMove.to.toUpperCase();     // e.g. "E4"
+      const from = this.gameData.lastMove.from.toUpperCase();
+      const to = this.gameData.lastMove.to.toUpperCase();
 
-      return {
-        from: from,
-        to: to
-      };
+      return { from, to };
     }
   },
   methods: {
@@ -187,14 +182,12 @@ export default {
         player2.hand = playerHand;
       }
 
-      const nextTurn = this.currentTurn === "white" ? "black" : "white";
-      this.chessGame.board.configuration.turn = nextTurn;
-
       this.$emit("gameUpdated", {
         player1: player1,
         player2: player2,
         game: this.chessGame,
         cardIndex: cardIndex,
+        lastMove: this.lastMove
       });
 
     },
@@ -232,8 +225,14 @@ export default {
 
         if (this.availableMoves.includes(toSquare)) {
           // Move the piece
-          move(this.chessGame.board.configuration, fromSquare, toSquare);
-          this.chessGame.board.configuration = JSON.parse(JSON.stringify(this.chessGame.board.configuration));
+          this.chessGame.move(fromSquare, toSquare);
+
+          const history = this.chessGame.getHistory();
+          const lastMove = history[history.length - 1];
+          this.lastMove = {
+            from: lastMove.from,
+            to: lastMove.to,
+          };
 
           // Update the game
           this.saveGame(localGame);
