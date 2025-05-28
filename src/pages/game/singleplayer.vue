@@ -154,14 +154,15 @@ export default {
 
       return cardType;
     },
-    updatePlayerHand(player, index) {
+    updatePlayerHand(player) {
       if (this.gameData) {
         const playerData = this.gameData[player];
+        // If the player has less than the hand size, draw a new card
         if (playerData && playerData.hand.length < this.handSize) {
           const newCard = this.drawCard();
-          playerData.hand.splice(index, 0, newCard);
+          playerData.hand.push(newCard);
+          this.gameData = { ...this.gameData, [player]: playerData };
         }
-        this.gameData[player] = playerData;
       }
     },
     makeAIMove() {
@@ -194,7 +195,7 @@ export default {
         hand.splice(randomCardIndex, 1);
         this.gameData.player2.hand = hand;
 
-        this.updatePlayerHand('player2', randomCardIndex);
+        this.updatePlayerHand('player2');
 
         console.warn("Passing turn to player 1.");
         this.passTurn();
@@ -219,7 +220,7 @@ export default {
         }
       }
 
-      this.updatePlayerHand('player2', usedIndex);
+      this.updatePlayerHand('player2');
 
       this.gameData.player2.hand = hand;
       this.gameData.currentTurn = 'player1';
@@ -303,7 +304,7 @@ export default {
       this.gameData.player1 = value.player1;
       this.gameData.player2 = value.player2;
 
-      this.updatePlayerHand('player1', value.cardIndex);
+      this.updatePlayerHand('player1');
 
       this.victoryState();
       if (this.gameData.winner) {
@@ -324,7 +325,7 @@ export default {
       const hand = this.gameData[player].hand;
       hand.splice(index, 1);
       this.gameData[player].hand = hand;
-      this.updatePlayerHand(player, index);
+      this.updatePlayerHand(player);
       this.passTurn();
       this.selectedCardIndex = null;
     },
