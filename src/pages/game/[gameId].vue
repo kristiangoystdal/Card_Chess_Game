@@ -10,7 +10,7 @@
     <!-- Chess Board -->
     <v-col class="game-board">
       <v-row class="chess-board-container">
-        <ChessBoard :gameData="gameData" :gameId="gameId" @gameUpdated="endPlayerTurn" />
+        <ChessBoard v-if="gameData" :gameData="gameData" :gameId="gameId" @gameUpdated="endPlayerTurn" />
       </v-row>
     </v-col>
 
@@ -95,6 +95,8 @@ export default {
       const dbRootRef = dbRef(db);
       const gameSnapshot = await get(child(dbRootRef, `games/${this.gameId}`));
       const gameData = gameSnapshot.val();
+
+      console.log("Current game data:", gameData);
 
       if (gameData.game) {
         this.gameData = gameData;
@@ -281,6 +283,7 @@ export default {
       this.gameData.game = value.game;
       this.gameData.player1 = value.player1;
       this.gameData.player2 = value.player2;
+      this.gameData.lastMove = value.lastMove || null;
 
       this.updatePlayerHand(this.myPlayerNr);
       this.victoryState();
@@ -295,7 +298,8 @@ export default {
         player1: this.gameData.player1,
         player2: this.gameData.player2,
         offeredDraw: this.gameData.offeredDraw,
-        winner: this.gameData.winner
+        winner: this.gameData.winner,
+        lastMove: this.gameData.lastMove || null,
       });
       console.log('Game data saved successfully.');
     },
@@ -365,6 +369,8 @@ export default {
     },
     myPlayer() {
       const userId = localStorage.getItem('userId');
+      if (!this.gameData) return null;
+
       if (userId === this.gameData.player1.userId) {
         return this.gameData.player1;
       } else if (userId === this.gameData.player2.userId) {
