@@ -152,7 +152,6 @@ export default {
           await set(gameRef, {
             player1: player1[1],
             player2: player2[1],
-            currentTurn: "player1",
             createdAt: Date.now(),
           });
 
