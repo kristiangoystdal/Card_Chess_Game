@@ -1,9 +1,14 @@
 <template>
   <div class="chess-board">
     <div v-for="rowIndex in 8" :key="rowIndex" class="row">
-      <div v-for="colIndex in 8" :key="colIndex"
-        :class="['cell', ((getBoardRow(rowIndex) + getBoardCol(colIndex)) % 2 === 0) ? 'light-cell' : 'dark-cell']"
-        @click="selectPiece(getBoardRow(rowIndex), getBoardCol(colIndex))">
+      <div v-for="colIndex in 8" :key="colIndex" :class="[
+        'cell',
+        ((getBoardRow(rowIndex) + getBoardCol(colIndex)) % 2 === 0) ? 'light-cell' : 'dark-cell',
+        lastMoveSquares && getSquare(getBoardRow(rowIndex), getBoardCol(colIndex)) === lastMoveSquares.from ? 'last-move-from' : '',
+        lastMoveSquares && getSquare(getBoardRow(rowIndex), getBoardCol(colIndex)) === lastMoveSquares.to ? 'last-move-to' : ''
+      ]" @click="selectPiece(getBoardRow(rowIndex), getBoardCol(colIndex))">
+
+
 
         <!-- Green outline under piece if it's a valid capture -->
         <div v-if="
@@ -35,9 +40,7 @@
 
 
 <script>
-import { db } from "@/js/firebaseConfig";
-import { ref, update } from "firebase/database";
-import { moves, move } from "js-chess-engine";
+import { move } from "js-chess-engine";
 
 import whitePawn from "@/assets/images/chess_pieces/pawn-w.svg";
 import whiteRook from "@/assets/images/chess_pieces/rook-w.svg";
@@ -140,6 +143,22 @@ export default {
     availableMoveSquares() {
       if (!this.availableMoves || typeof this.availableMoves !== 'object') return [];
       return Object.values(this.availableMoves);
+    },
+    history() {
+      return this.chessGame?.getHistory(false);
+    },
+    lastMoveSquares() {
+      const history = this.chessGame?.getHistory(false);
+      if (!history || history.length === 0) return null;
+
+      const lastMove = history[history.length - 1];
+      const from = lastMove.from.toUpperCase(); // e.g. "E2"
+      const to = lastMove.to.toUpperCase();     // e.g. "E4"
+
+      return {
+        from: from,
+        to: to
+      };
     }
   },
   methods: {
@@ -292,7 +311,6 @@ export default {
   box-sizing: border-box;
 }
 
-
 .row {
   display: contents;
 }
@@ -312,6 +330,17 @@ export default {
 .dark-cell {
   background-color: #769656;
 }
+
+.last-move-from {
+  background-color: #ffe169;
+  /* softer yellow */
+}
+
+.last-move-to {
+  background-color: #ffd900;
+  /* bold yellow */
+}
+
 
 /* Piece image inside a cell */
 .cell img {
