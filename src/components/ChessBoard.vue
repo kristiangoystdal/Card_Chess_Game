@@ -225,7 +225,7 @@ export default {
 
         if (this.availableMoves.includes(toSquare)) {
           // Move the piece
-          this.chessGame.move(fromSquare, toSquare);
+          this.chessGame.move(fromSquare, toSquare, true);
 
           const history = this.chessGame.getHistory();
           const lastMove = history[history.length - 1];
@@ -262,7 +262,7 @@ export default {
         this.selectedCol = col;
 
         // Get the available moves for current player
-        this.availableMoves = this.chessGame.moves(this.getSquare(row, col));
+        this.availableMoves = this.chessGame.moves(this.getSquare(row, col), true);
       }
       else {
         this.selectedPiece = null;
