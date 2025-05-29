@@ -31,7 +31,8 @@
 import { db } from '../../js/firebaseConfig';
 import { ref as dbRef, set, get, onValue, child, update } from 'firebase/database';
 import { useRoute } from 'vue-router';
-import { Game as JSChessGame } from "js-chess-engine";
+import { Game as JSChessGame, move } from '../../lib/js-chess-engine.mjs';
+
 
 import card_pawn_black from '../../assets/images/cards/card_p_b.png';
 import card_pawn_white from '../../assets/images/cards/card_p_w.png';
