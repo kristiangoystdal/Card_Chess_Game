@@ -28,7 +28,9 @@
 
 <script>
 import { useRoute } from 'vue-router';
-import { Game as JSChessGame } from "js-chess-engine";
+import { Game as JSChessGame, move } from '../../lib/js-chess-engine.mjs';
+
+
 
 import card_pawn_black from '../../assets/images/cards/card_p_b.png';
 import card_pawn_white from '../../assets/images/cards/card_p_w.png';
@@ -170,8 +172,14 @@ export default {
       const hand = aiPlayer.hand;
       const game = this.gameData.game;
 
-      const allMoves = game.moves();
-      const legalMoves = [];
+      if (game.board.configuration.check) {
+        console.warn("AI is in check, it must make a move to get out of check.");
+      }
+
+      game.board.configuration.check = false; // Reset check state for AI move
+
+      let allMoves = game.moves(null, false);
+      let legalMoves = [];
 
       // Collect legal moves that match AI's hand
       for (const from in allMoves) {
@@ -183,6 +191,28 @@ export default {
           const pieceType = piece.toLowerCase(); // 'r', 'p', etc.
           if (hand.includes(pieceType) || hand.includes('w')) {
             legalMoves.push({ from, to, piece });
+          }
+        }
+      }
+
+      // Check if the AI has any legal moves if in check
+      if (legalMoves.length === 0) {
+        console.warn("AI has no legal moves it can make with its current hand, but is in check.");
+
+        allMoves = game.moves(null, true);
+        legalMoves = [];
+
+        // Collect legal moves that match AI's hand
+        for (const from in allMoves) {
+          for (const to of allMoves[from]) {
+            const piece = game.board.configuration.pieces[from];
+
+            if (!piece) continue;
+
+            const pieceType = piece.toLowerCase(); // 'r', 'p', etc.
+            if (hand.includes(pieceType) || hand.includes('w')) {
+              legalMoves.push({ from, to, piece });
+            }
           }
         }
       }
@@ -207,7 +237,7 @@ export default {
       const moveChoice = legalMoves[Math.floor(Math.random() * legalMoves.length)];
 
       // Make the move
-      game.move(moveChoice.from, moveChoice.to);
+      game.move(moveChoice.from, moveChoice.to, true);
 
       // Update AI hand
       let usedIndex = hand.indexOf(moveChoice.piece.toLowerCase());
