@@ -10,8 +10,6 @@ export class Game {
         from = from.toUpperCase()
         to = to.toUpperCase()
         const possibleMoves = this.board.getMoves(undefined, undefined, ignoreCheckValidation)
-        console.log('Possible moves:', possibleMoves)
-        console.log(`Moving from ${from} to ${to} for ${this.board.getPlayingColor()}`)
         if (!possibleMoves[from] || !possibleMoves[from].includes(to)) {
             throw new Error(`Invalid move from ${from} to ${to} for ${this.board.getPlayingColor()}`)
         }
